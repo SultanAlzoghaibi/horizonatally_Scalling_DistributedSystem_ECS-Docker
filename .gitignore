@@ -1,0 +1,57 @@
+# === IntelliJ IDEA ===
+/.idea/
+/*.iml
+/.idea/workspace.xml
+/.idea/libraries/
+/.idea/shelf/
+/.idea/httpRequests/
+out/
+/*.ipr
+/*.iws
+
+# === VS Code ===
+.vscode/
+
+# === Build files ===
+/bin/
+/build/
+/out/
+/target/
+/dist/
+/*.class
+*.war
+*.ear
+
+# === Gradle ===
+.gradle/
+/build/
+!gradle/wrapper/gradle-wrapper.jar
+.gradle/
+gradle-app.setting
+
+# === Maven ===
+.mvn/
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.next
+release.properties
+
+# === OS files ===
+.DS_Store
+Thumbs.db
+
+# === Logs & Misc ===
+*.log
+*.lock
+*.pyc
+*.pyo
+*.swp
+*.swo
+
+# === Temporary files ===
+*.tmp
+*.bak
+*.swp
+*.swo
+*.orig
