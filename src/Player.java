@@ -21,6 +21,9 @@ public class Player extends JFrame {
     private int turnsMade;
     private int myPoints;
     private int enemyPoints;
+    private boolean buttonsEnabled;
+    // this will impliment the turn based aspect forcing the player
+    // to wait the other players turn
 
 
 
@@ -60,12 +63,36 @@ public class Player extends JFrame {
 
         if (playerID == 1){
             message.setText("you are player 1, you go first");
+            otherPlayerID = 2;
+            buttonsEnabled = true;
         }
         else {
             message.setText("you are player 2, wait for your turn");
+            otherPlayerID = 1;
+            buttonsEnabled = false;
+             /* why thread? bc we don't want the net code to interrupt the gui display
+            every read can interrupt the code sequence until you receive the request
+            Hence you ruin a thread and don't interpret the gui field like messages or toggle button
+            */
+            Thread t = new Thread(new Runnable() {
+                public void run() {
+                    updateTurn();
+                }
+            });
+            t.start();
         }
 
+        toggleButtons();
+
         this.setVisible(true); // set frame visibility true
+    }
+
+    public void toggleButtons(){
+        b1.setEnabled(buttonsEnabled);
+        b2.setEnabled(buttonsEnabled);
+        b3.setEnabled(buttonsEnabled);
+        b4.setEnabled(buttonsEnabled); // flips the buttons from javax.swing
+
     }
 
     public void connectToServer(){
@@ -75,13 +102,30 @@ public class Player extends JFrame {
         ActionListener al = new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 JButton b = (JButton) ae.getSource();
-               int bNum = Integer.parseInt(b.getText()); // this is a string lets parse it
+                int bNum = Integer.parseInt(b.getText()); // this is a string lets parse it
                 message.setText(" You clicked button #" + bNum + "now wait fo next player turn") ;
 
                 turnsMade++;
                 System.out.println("Turns made: " + turnsMade);
-                myPoints = myPoints + values[bNum];
+
+                buttonsEnabled = false;
+                toggleButtons();
+
+
+                myPoints = myPoints + values[bNum-1];
                 System.out.println("myPoints: " + myPoints);
+
+                // NOTE!: csc is our communication tool with the Server,
+                // like the mail drop off point
+                csc.sendButtonNum(bNum);
+
+                Thread t = new Thread(new Runnable() {
+                    public void run() {
+                        updateTurn();
+                    }
+
+                });
+                t.start();
             }
         };
         b1.addActionListener(al); // ADDING ALL THE BUTTONS
@@ -91,12 +135,23 @@ public class Player extends JFrame {
 
     }
 
+
+    public void updateTurn(){
+        int n = csc.receiveButtonNum();
+        message.setText("your opponent clicked #" + n + "now your Turn");
+        enemyPoints += values[n-1];
+        System.out.println("Your enemy has " + enemyPoints + " points");
+        buttonsEnabled = true;
+        toggleButtons();
+    }
+
+
     //Networking instruction for the Client
     private class ClientSideConnection{
         private Socket socket;
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
-        public ClientSideConnection(){
+        public ClientSideConnection(){   // I think this is waht is being send to the server
             System.out.println("Client side connection");
 
 
@@ -127,12 +182,35 @@ public class Player extends JFrame {
 
             }
         }
+
+        public void sendButtonNum(int buttonNum){
+            try{
+                dataOut.writeInt(buttonNum); // this is sending to server an int
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection sendButtonNum");
+            }
+
+        }
+        public int receiveButtonNum(){ // this is gonna read th int sent by
+            // server about the other player num
+            int n = -1; // placeholder n gets replaced with button ums 1-4
+
+            try{
+                n = dataIn.readInt();
+                System.out.println("player #" + otherPlayerID + "clicked button #" + n );
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection receiveButtonNum");
+            }
+            return n;
+
+        }
     }
 
     public static void main(String[] args) {
         Player p = new Player(800, 600);
         p.connectToServer();
-        p.setUpGUII();
+        p.setUpGUII(); //has startReceivingButtonNums in it
         p.setUpButtons();
     }
 }

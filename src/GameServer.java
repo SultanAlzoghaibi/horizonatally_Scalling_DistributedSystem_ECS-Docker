@@ -8,10 +8,17 @@ public class GameServer {
     private ServerSocket ss;
     private int numPlayers;
     private ServerSideConnection player1;
+    // these a the server side equilivant to the package drop off pouints i think
     private ServerSideConnection player2;
     private int turnsMade;
     private int maxTurns;
     private int[] values;
+
+    // store the  the button num that the player clicked on, befroe being sent to the other player
+    // don in the run method while loop, for each turns
+    private int player1ButtonNum;
+    private int player2ButtonNum;
+
 
     public GameServer() {
         System.out.println("--game server--");
@@ -23,7 +30,7 @@ public class GameServer {
         for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
             values[i] = i;
         }
-        System.out.println("vallues array:" + Arrays.toString(values));
+        System.out.println("values array:" + Arrays.toString(values));
 
 
 
@@ -86,13 +93,32 @@ public class GameServer {
                 for (int i = 0; i < 4; i++) {
                     dataOut.writeInt(values[i]);
                 }
-
                 dataOut.flush();
+                while (true) {
+                    if(playerID == 1){
+                        player1ButtonNum = dataIn.readInt(); // read it from player 1
+                        System.out.println("Payer 1 clicked button #" + player1ButtonNum);
+                        player2.sendButtonNum(player1ButtonNum);
+                    }
+                    else{
+                        player2ButtonNum = dataIn.readInt();
+                        System.out.println("Payer 2 clicked button #" + player2ButtonNum);
+                        player1.sendButtonNum(player2ButtonNum);
+                    }
+                }
             } catch (IOException e) {
                 System.out.println("IOException from run() : ServerSideConnection");
             }
         }
 
+        public void sendButtonNum(int buttonNum){
+            try{
+                dataOut.writeInt(buttonNum);
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IOException from sendButtonNum() : ServerSideConnection");
+            }
+        }
 
     }
 
