@@ -105,6 +105,11 @@ public class GameServer {
                         System.out.println("Payer 2 clicked button #" + player2ButtonNum);
                         player1.sendButtonNum(player2ButtonNum);
                     }
+                    turnsMade++;
+                    if(turnsMade >= maxTurns){
+                        System.out.println("Max turns reached");
+                        break; // break from the game and end
+                    }
                 }
             } catch (IOException e) {
                 System.out.println("IOException from run() : ServerSideConnection");

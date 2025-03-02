@@ -119,13 +119,19 @@ public class Player extends JFrame {
                 // like the mail drop off point
                 csc.sendButtonNum(bNum);
 
-                Thread t = new Thread(new Runnable() {
-                    public void run() {
-                        updateTurn();
-                    }
+                if (playerID == 2 && turnsMade == maxTurns){
+                    checkWinner();
+                } else {
+                    // When you press uour turn, you now need to Wait for your next turn
+                    Thread t = new Thread(new Runnable() {
 
-                });
-                t.start();
+                        public void run() {
+                            updateTurn();
+                        }
+
+                    });
+                    t.start();
+                }
             }
         };
         b1.addActionListener(al); // ADDING ALL THE BUTTONS
@@ -141,10 +147,29 @@ public class Player extends JFrame {
         message.setText("your opponent clicked #" + n + "now your Turn");
         enemyPoints += values[n-1];
         System.out.println("Your enemy has " + enemyPoints + " points");
-        buttonsEnabled = true;
+
+        if(playerID == 1 && turnsMade == maxTurns){ // win checker for player 1
+            checkWinner();
+        } else {
+            buttonsEnabled = true;
+        }
+
         toggleButtons();
     }
 
+    private void checkWinner(){
+        buttonsEnabled = false;
+        if (myPoints > enemyPoints) {
+            message.setText("You won! You: " + myPoints + " points, Enemy: " + enemyPoints + " points");
+        } else if (myPoints < enemyPoints) {
+            message.setText("You lost! You: " + myPoints + " points, Enemy: " + enemyPoints + " points");
+        } else {
+            message.setText("It's a tie! Both have " + myPoints + " points.");
+        }
+
+        csc.closeConnection();
+
+    }
 
     //Networking instruction for the Client
     private class ClientSideConnection{
@@ -205,7 +230,20 @@ public class Player extends JFrame {
             return n;
 
         }
+
+        public void closeConnection(){
+            try {
+                socket.close();
+                System.out.println("Closing connection");
+
+            } catch (IOException e){
+                System.out.println("IO exception in ClientSideConnection closeConnection");
+            }
+        }
+
+
     }
+
 
     public static void main(String[] args) {
         Player p = new Player(800, 600);
