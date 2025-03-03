@@ -42,12 +42,11 @@ public class GameServerT {
             }
         }
 
-        System.out.println("values array:" + Arrays.toString(values));
         for (int i = 0; i < Server2dChar.length; i++) {
-            System.out.println();
             for (int j = 0; j < Server2dChar[i].length; j++) {
                 System.out.print("["+ Server2dChar[i][j] + "]");
             }
+            System.out.println();
         }
 
 
@@ -97,6 +96,7 @@ public class GameServerT {
         public ServerSideConnection(Socket s, int id){
             socket = s;
             playerID = id;
+
             try {
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
@@ -108,16 +108,11 @@ public class GameServerT {
             try {
                 dataOut.writeInt(playerID);
                 dataOut.writeInt(maxTurns);
-                for (int i = 0; i < 4; i++) {
-                    dataOut.writeInt(values[i]);
-                }
 
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
-
-                        dataOut.writeInt(Server2dChar[i][j]);
+                        dataOut.writeChar(Server2dChar[i][j]);
                     }
-
                 }
                 dataOut.flush();
 
@@ -126,6 +121,8 @@ public class GameServerT {
                     if(playerID == 1){
                         player1ButtonNum = dataIn.readInt(); // read it from player 1
                         System.out.println("Payer 1 clicked button #" + player1ButtonNum);
+                        // Update array
+
                         player2.sendButtonNum(player1ButtonNum);
 
 
@@ -136,7 +133,8 @@ public class GameServerT {
                         player1.sendButtonNum(player2ButtonNum);
                     }
                     turnsMade++;
-                    if(turnsMade >= maxTurns){
+
+                    if(endGame()){
                         System.out.println("Max turns reached");
                         break; // break from the game and end
                     }
@@ -145,6 +143,7 @@ public class GameServerT {
                 System.out.println("IOException from run() : ServerSideConnection");
             }
         }
+
 
         public void sendButtonNum(int buttonNum){
             try{
@@ -155,7 +154,17 @@ public class GameServerT {
             }
         }
 
+        public boolean endGame(){
+            return turnsMade >= maxTurns;
+        }
+
+        public char[][] processGameLogic(String input){
+            return new char[3][3];
+        }
+
     }
+
+
 
 
     public static void main(String[] args) {

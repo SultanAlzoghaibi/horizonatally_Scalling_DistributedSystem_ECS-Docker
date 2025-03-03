@@ -21,16 +21,18 @@ public class GameServer {
 
     private char[] gameBoard;
 
-    public GameServer() {
+    public GameServer() { // Game starting server info
         System.out.println("--game server--");
         numPlayers = 0;
         turnsMade = 0;
         maxTurns = 5;
         values = new int[4];
 
-        for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
+        for (int i = 0; i < 4; i++) {
             values[i] = i;
         }
+
+
         System.out.println("values array:" + Arrays.toString(values));
 
 
@@ -94,6 +96,7 @@ public class GameServer {
                 for (int i = 0; i < 4; i++) {
                     dataOut.writeInt(values[i]);
                 }
+
                 dataOut.flush();
                 while (true) {
                     if(playerID == 1){

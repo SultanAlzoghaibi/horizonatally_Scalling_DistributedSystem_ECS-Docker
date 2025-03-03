@@ -22,12 +22,15 @@ public class PlayerT extends JFrame {
     private int otherPlayerID;
 
     private int[] values;
+    private char[][] Server2dChar;
+
     private int maxTurns;
     private int turnsMade;
     private int myPoints;
     private int enemyPoints;
     private boolean buttonsEnabled;
     private String playerInputSender;
+
     // this will impliment the turn based aspect forcing the player
     // to wait the other players turn
 
@@ -51,6 +54,7 @@ public class PlayerT extends JFrame {
         String playerInputSender;
 
         values = new int[4];
+        Server2dChar = new char[3][3];
         turnsMade = 0;
         myPoints = 0;
         enemyPoints = 0;
@@ -156,22 +160,22 @@ public class PlayerT extends JFrame {
         ActionListener al = new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
                 JButton b = (JButton) ae.getSource();
-                int bNum = Integer.parseInt(b.getText()); // this is a string lets parse it
-                message.setText(" You clicked button #" + bNum + "now wait fo next player turn") ;
+                String strBNum = (b.getText()); // this is a string lets parse it
+
+                message.setText(" You clicked button #" + strBNum + "now wait fo next player turn") ;
 
                 turnsMade++;
                 System.out.println("Turns made: " + turnsMade);
 
                 buttonsEnabled = false;
                 toggleButtons();
+                //myPoints = myPoints + values[bNum-1];
 
-
-                myPoints = myPoints + values[bNum-1];
-                System.out.println("myPoints: " + myPoints);
+                System.out.println("bNum: " + strBNum);
 
                 // NOTE!: csc is our communication tool with the Server,
                 // like the mail drop off point
-                csc.sendButtonNum(bNum);
+                csc.sendButtonNum(strBNum);
 
                 if (playerID == 2 && turnsMade == maxTurns){
                     checkWinner();
@@ -253,11 +257,25 @@ public class PlayerT extends JFrame {
                 System.out.println("webSocketNotes.Player ID: " + playerID);
 
                 //VALUES TO SEND OVER THE NETWORK!
-                maxTurns = dataIn.readInt() / 2;
-                values[0] = dataIn.readInt();
-                values[1] = dataIn.readInt();
-                values[2] = dataIn.readInt();
-                values[3] = dataIn.readInt();
+                maxTurns = dataIn.readInt() / 2; // pass
+                System.out.println(maxTurns);
+
+                char tempchar = 'E';
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+
+                        tempchar = dataIn.readChar();
+                        System.out.print("read: " + "'" + tempchar + "'");
+                        Server2dChar[i][j] = tempchar;
+                    }
+                    System.out.println();
+
+                }
+
+                System.out.println("Server2dChar[0][0]: '" + Server2dChar[0][0] + "'");
+                System.out.println("Server2dChar[0][1]: '" + Server2dChar[0][1] + "'");
+                System.out.println("Server2dChar[0][2]: '" + Server2dChar[0][2] + "'");
+
 
                 System.out.println("maxTurns: " + maxTurns);
                 System.out.println("values[0]: " + values[0]);
@@ -273,9 +291,9 @@ public class PlayerT extends JFrame {
             }
         }
 
-        public void sendButtonNum(int buttonNum){
+        public void sendButtonNum(String strBNum){
             try{
-                dataOut.writeInt(buttonNum); // this is sending to server an int
+                dataOut.writeChars(strBNum); // this is sending to server an int
                 dataOut.flush();
             } catch (IOException e) {
                 System.out.println("IO exception in ClientSideConnection sendButtonNum");
