@@ -78,14 +78,14 @@ public class TicTacToe {
         Scanner scanner = new Scanner(System.in);
         while (true) {
             printBoard();
-            System.out.println("Player " + currentPlayer + ", enter row (0-2) and column (0-2): ");
+            System.out.println("webSocketNotes.Player " + currentPlayer + ", enter row (0-2) and column (0-2): ");
             int row = scanner.nextInt();
             int col = scanner.nextInt();
 
             if (makeMove(row, col)) {
                 if (theresAWinner()) {
                     printBoard();
-                    System.out.println("Player " + currentPlayer + " wins!");
+                    System.out.println("webSocketNotes.Player " + currentPlayer + " wins!");
                     break;
                 }
                 if (isBoardFull()) {

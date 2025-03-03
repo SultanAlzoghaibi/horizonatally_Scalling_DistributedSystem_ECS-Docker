@@ -1,10 +1,11 @@
-
-import java.net.*;
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.Arrays;
-import java.util.Map;
 
-public class GameServer {
+public class GameServerT {
     private ServerSocket ss;
     private int numPlayers;
     private ServerSideConnection player1;
@@ -13,24 +14,42 @@ public class GameServer {
     private int turnsMade;
     private int maxTurns;
     private int[] values;
+    private char[][] Server2dChar;
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
     private int player1ButtonNum;
     private int player2ButtonNum;
 
+    private char[] gameBoard;
 
-    public GameServer() {
+    public GameServerT() {
         System.out.println("--game server--");
         numPlayers = 0;
         turnsMade = 0;
-        maxTurns = 5;
+        maxTurns = 90;
         values = new int[4];
+        Server2dChar = new char[3][3];
 
         for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
             values[i] = i;
         }
+
+        //
+        for (int i = 0; i < Server2dChar.length; i++) {
+            for (int j = 0; j < Server2dChar[i].length; j++) {
+                Server2dChar[i][j] = ' ';
+            }
+        }
+
         System.out.println("values array:" + Arrays.toString(values));
+        for (int i = 0; i < Server2dChar.length; i++) {
+            System.out.println();
+            for (int j = 0; j < Server2dChar[i].length; j++) {
+                System.out.print("["+ Server2dChar[i][j] + "]");
+            }
+        }
+
 
 
 
@@ -51,7 +70,7 @@ public class GameServer {
             while (numPlayers < 2) {
                 Socket s = ss.accept();
                 numPlayers++;
-                System.out.println("Player #" + numPlayers + " has joined the game");
+                System.out.println("webSocketNotes.Player #" + numPlayers + " has joined the game");
                 ServerSideConnection ssc = new ServerSideConnection(s, numPlayers);
                 if (numPlayers == 1) {
                     player1 = ssc;
@@ -89,16 +108,27 @@ public class GameServer {
             try {
                 dataOut.writeInt(playerID);
                 dataOut.writeInt(maxTurns);
-
                 for (int i = 0; i < 4; i++) {
                     dataOut.writeInt(values[i]);
                 }
+
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+
+                        dataOut.writeInt(Server2dChar[i][j]);
+                    }
+
+                }
                 dataOut.flush();
+
+
                 while (true) {
                     if(playerID == 1){
                         player1ButtonNum = dataIn.readInt(); // read it from player 1
                         System.out.println("Payer 1 clicked button #" + player1ButtonNum);
                         player2.sendButtonNum(player1ButtonNum);
+
+
                     }
                     else{
                         player2ButtonNum = dataIn.readInt();
@@ -129,7 +159,7 @@ public class GameServer {
 
 
     public static void main(String[] args) {
-        GameServer gs = new GameServer();
+        GameServerT gs = new GameServerT();
         gs.acceptConnections();
 
     }

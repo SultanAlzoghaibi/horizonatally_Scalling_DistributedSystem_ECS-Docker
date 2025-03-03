@@ -1,17 +1,22 @@
-
 import javax.swing.*;
 import java.awt.*;
-import java.net.*;
-import java.io.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
 
-public class Player extends JFrame {
+public class PlayerT extends JFrame {
 
 
     private int width, height;
     private Container contentPane;
     private JTextArea message;
     private JButton b1,b2,b3,b4;
+
+    private JButton b01,b02,b03,b04,b05,b06,b07,b08,b09;
+
     private ClientSideConnection csc;
     private int playerID;
     private int otherPlayerID;
@@ -22,20 +27,28 @@ public class Player extends JFrame {
     private int myPoints;
     private int enemyPoints;
     private boolean buttonsEnabled;
+    private String playerInputSender;
     // this will impliment the turn based aspect forcing the player
     // to wait the other players turn
 
 
 
-    public Player(int w, int h) {
+    public PlayerT(int w, int h) {
         width = w;
         height = h;
         contentPane = this.getContentPane();
         message = new JTextArea();
-        b1 = new JButton("1");
-        b2 = new JButton("2");
-        b3 = new JButton("3");
-        b4 = new JButton("4");
+
+        b01 = new JButton("1");
+        b02 = new JButton("2");
+        b03 = new JButton("3");
+        b04 = new JButton("4");
+        b05 = new JButton("5");
+        b06 = new JButton("6");
+        b07 = new JButton("7");
+        b08 = new JButton("8");
+        b09 = new JButton("9");
+        String playerInputSender;
 
         values = new int[4];
         turnsMade = 0;
@@ -47,19 +60,52 @@ public class Player extends JFrame {
 
     public void setUpGUII(){
         this.setSize(width, height);
-        this.setTitle("the Game for Player #" + playerID);
-
+        this.setTitle("The Game for Player #" + playerID);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        contentPane.setLayout(new GridLayout(1,5));
-        contentPane.add(message);
-        message.setText("Turn based game");
+        contentPane = this.getContentPane();
+        contentPane.setLayout(new BorderLayout());
+
+
+        message = new JTextArea();
+        message.setText("Turn-based game");
         message.setWrapStyleWord(true);
         message.setLineWrap(true);
         message.setEditable(false);
-        contentPane.add(b1);
-        contentPane.add(b2);
-        contentPane.add(b3);
-        contentPane.add(b4);
+
+
+        //asked chatGTP to setup for end gui fro testing
+        contentPane.add(message, BorderLayout.NORTH);
+        ImageIcon icon = new ImageIcon("image.png");
+        // Create 3x3 grid for top buttons
+        JPanel topPanel = new JPanel(new GridLayout(3, 3));
+
+        // Create Top 3x3 Grid for Images
+        for (int i = 1; i <= 9; i++) {
+            JLabel imageLabel = new JLabel(icon); // Add image labels
+            topPanel.add(imageLabel);
+        }
+
+
+        // Create 3x3 grid for bottom buttons
+        JPanel bottomPanel = new JPanel(new GridLayout(3, 3));
+        bottomPanel.add(b01);
+        bottomPanel.add(b02);
+        bottomPanel.add(b03);
+        bottomPanel.add(b04);
+        bottomPanel.add(b05);
+        bottomPanel.add(b06);
+        bottomPanel.add(b07);
+        bottomPanel.add(b08);
+        bottomPanel.add(b09);
+
+       // end of chatGTP
+
+        // Add both panels to contentPane
+        contentPane.add(topPanel, BorderLayout.CENTER);
+        contentPane.add(bottomPanel, BorderLayout.SOUTH);
+
+        this.setVisible(true);
+
 
         if (playerID == 1){
             message.setText("you are player 1, you go first");
@@ -88,16 +134,24 @@ public class Player extends JFrame {
     }
 
     public void toggleButtons(){
-        b1.setEnabled(buttonsEnabled);
-        b2.setEnabled(buttonsEnabled);
-        b3.setEnabled(buttonsEnabled);
-        b4.setEnabled(buttonsEnabled); // flips the buttons from javax.swing
+        //b1.setEnabled(buttonsEnabled);
+        // flips the buttons from javax.swing
+        b01.setEnabled(buttonsEnabled);
+        b02.setEnabled(buttonsEnabled);
+        b03.setEnabled(buttonsEnabled);
+        b04.setEnabled(buttonsEnabled);
+        b05.setEnabled(buttonsEnabled);
+        b06.setEnabled(buttonsEnabled);
+        b07.setEnabled(buttonsEnabled);
+        b08.setEnabled(buttonsEnabled);
+        b09.setEnabled(buttonsEnabled);
 
     }
 
     public void connectToServer(){
         csc = new ClientSideConnection();
     }
+
     public void setUpButtons(){
         ActionListener al = new ActionListener() {
             public void actionPerformed(ActionEvent ae) {
@@ -134,10 +188,20 @@ public class Player extends JFrame {
                 }
             }
         };
-        b1.addActionListener(al); // ADDING ALL THE BUTTONS
+    /*    b1.addActionListener(al); // ADDING ALL THE BUTTONS
         b2.addActionListener(al);
         b3.addActionListener(al);
         b4.addActionListener(al);
+
+*/      b01.addActionListener(al);
+        b02.addActionListener(al);
+        b03.addActionListener(al);
+        b04.addActionListener(al);
+        b05.addActionListener(al);
+        b06.addActionListener(al);
+        b07.addActionListener(al);
+        b08.addActionListener(al);
+        b09.addActionListener(al);
 
     }
 
@@ -146,6 +210,7 @@ public class Player extends JFrame {
         int n = csc.receiveButtonNum();
         message.setText("your opponent clicked #" + n + "now your Turn");
         enemyPoints += values[n-1];
+
         System.out.println("Your enemy has " + enemyPoints + " points");
 
         if(playerID == 1 && turnsMade == maxTurns){ // win checker for player 1
@@ -185,7 +250,7 @@ public class Player extends JFrame {
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
                 playerID = dataIn.readInt();
-                System.out.println("Player ID: " + playerID);
+                System.out.println("webSocketNotes.Player ID: " + playerID);
 
                 //VALUES TO SEND OVER THE NETWORK!
                 maxTurns = dataIn.readInt() / 2;
@@ -246,7 +311,7 @@ public class Player extends JFrame {
 
 
     public static void main(String[] args) {
-        Player p = new Player(800, 600);
+        PlayerT p = new PlayerT(800, 400);
         p.connectToServer();
         p.setUpGUII(); //has startReceivingButtonNums in it
         p.setUpButtons();
