@@ -6,6 +6,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Arrays;
 
 public class PlayerT extends JFrame {
 
@@ -22,7 +23,7 @@ public class PlayerT extends JFrame {
     private int otherPlayerID;
 
     private int[] values;
-    private char[][] Server2dChar;
+    private char[][] server2dChar;
 
     private int maxTurns;
     private int turnsMade;
@@ -54,7 +55,7 @@ public class PlayerT extends JFrame {
         String playerInputSender;
 
         values = new int[4];
-        Server2dChar = new char[3][3];
+        server2dChar = new char[3][3];
         turnsMade = 0;
         myPoints = 0;
         enemyPoints = 0;
@@ -170,12 +171,12 @@ public class PlayerT extends JFrame {
                 buttonsEnabled = false;
                 toggleButtons();
                 //myPoints = myPoints + values[bNum-1];
-
-                System.out.println("bNum: " + strBNum);
-
+                System.out.println("we sent bNum: " + strBNum);
                 // NOTE!: csc is our communication tool with the Server,
                 // like the mail drop off point
+
                 csc.sendButtonNum(strBNum);
+
 
                 if (playerID == 2 && turnsMade == maxTurns){
                     checkWinner();
@@ -211,11 +212,14 @@ public class PlayerT extends JFrame {
 
 
     public void updateTurn(){
-        int n = csc.receiveButtonNum();
+        String n = "N";
+        n = csc.receiveButtonNum();
         message.setText("your opponent clicked #" + n + "now your Turn");
-        enemyPoints += values[n-1];
 
-        System.out.println("Your enemy has " + enemyPoints + " points");
+        // prints the 2d ct from server
+        for (char[] row : server2dChar) {
+            System.out.println(Arrays.toString(row));
+        }
 
         if(playerID == 1 && turnsMade == maxTurns){ // win checker for player 1
             checkWinner();
@@ -265,23 +269,13 @@ public class PlayerT extends JFrame {
                     for (int j = 0; j < 3; j++) {
 
                         tempchar = dataIn.readChar();
-                        System.out.print("read: " + "'" + tempchar + "'");
-                        Server2dChar[i][j] = tempchar;
+                        System.out.print("[" + tempchar + "]");
+                        server2dChar[i][j] = tempchar;
                     }
                     System.out.println();
-
                 }
 
-                System.out.println("Server2dChar[0][0]: '" + Server2dChar[0][0] + "'");
-                System.out.println("Server2dChar[0][1]: '" + Server2dChar[0][1] + "'");
-                System.out.println("Server2dChar[0][2]: '" + Server2dChar[0][2] + "'");
 
-
-                System.out.println("maxTurns: " + maxTurns);
-                System.out.println("values[0]: " + values[0]);
-                System.out.println("values[1]: " + values[1]);
-                System.out.println("values[2]: " + values[2]);
-                System.out.println("values[3]: " + values[3]);
 
 
 
@@ -300,17 +294,22 @@ public class PlayerT extends JFrame {
             }
 
         }
-        public int receiveButtonNum(){ // this is gonna read th int sent by
+        public String receiveButtonNum(){ // this is gonna read th int sent by
             // server about the other player num
-            int n = -1; // placeholder n gets replaced with button ums 1-4
+            String str = "N"; // placeholder n gets replaced with button ums 1-4
 
             try{
-                n = dataIn.readInt();
-                System.out.println("player #" + otherPlayerID + "clicked button #" + n );
+                str = String.valueOf(dataIn.readChar());
+                System.out.println("player #" + otherPlayerID + "clicked button #" + str );
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        server2dChar[i][j] = dataIn.readChar(); // Read and update each cell
+                    }
+                }
             } catch (IOException e) {
                 System.out.println("IO exception in ClientSideConnection receiveButtonNum");
             }
-            return n;
+            return str;
 
         }
 

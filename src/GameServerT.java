@@ -14,12 +14,12 @@ public class GameServerT {
     private int turnsMade;
     private int maxTurns;
     private int[] values;
-    private char[][] Server2dChar;
+    private char[][] server2dChar;
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
-    private int player1ButtonNum;
-    private int player2ButtonNum;
+    private String player1ButtonNum;
+    private String player2ButtonNum;
 
     private char[] gameBoard;
 
@@ -29,22 +29,22 @@ public class GameServerT {
         turnsMade = 0;
         maxTurns = 90;
         values = new int[4];
-        Server2dChar = new char[3][3];
+        server2dChar = new char[3][3];
 
         for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
             values[i] = i;
         }
 
         //
-        for (int i = 0; i < Server2dChar.length; i++) {
-            for (int j = 0; j < Server2dChar[i].length; j++) {
-                Server2dChar[i][j] = ' ';
+        for (int i = 0; i < server2dChar.length; i++) {
+            for (int j = 0; j < server2dChar[i].length; j++) {
+                server2dChar[i][j] = ' ';
             }
         }
 
-        for (int i = 0; i < Server2dChar.length; i++) {
-            for (int j = 0; j < Server2dChar[i].length; j++) {
-                System.out.print("["+ Server2dChar[i][j] + "]");
+        for (int i = 0; i < server2dChar.length; i++) {
+            for (int j = 0; j < server2dChar[i].length; j++) {
+                System.out.print("["+ server2dChar[i][j] + "]");
             }
             System.out.println();
         }
@@ -111,7 +111,7 @@ public class GameServerT {
 
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
-                        dataOut.writeChar(Server2dChar[i][j]);
+                        dataOut.writeChar(server2dChar[i][j]);
                     }
                 }
                 dataOut.flush();
@@ -119,18 +119,30 @@ public class GameServerT {
 
                 while (true) {
                     if(playerID == 1){
-                        player1ButtonNum = dataIn.readInt(); // read it from player 1
+                        player1ButtonNum = String.valueOf(dataIn.readChar());  // Reads one char and converts to String // read it from player 1
                         System.out.println("Payer 1 clicked button #" + player1ButtonNum);
                         // Update array
+                        processGameLogicP1(player1ButtonNum);
 
+
+                        for (char[] row : server2dChar) {
+                            System.out.println(Arrays.toString(row));
+                        }
                         player2.sendButtonNum(player1ButtonNum);
-
+                        player2.send2dCharArray(); // sending server2dChar
 
                     }
                     else{
-                        player2ButtonNum = dataIn.readInt();
+                        player2ButtonNum = String.valueOf(dataIn.readChar());
                         System.out.println("Payer 2 clicked button #" + player2ButtonNum);
+                        processGameLogicP2(player1ButtonNum);
+
+                        for (char[] row : server2dChar) {
+                            System.out.println(Arrays.toString(row));
+                        }
+
                         player1.sendButtonNum(player2ButtonNum);
+                        player1.send2dCharArray();
                     }
                     turnsMade++;
 
@@ -145,12 +157,25 @@ public class GameServerT {
         }
 
 
-        public void sendButtonNum(int buttonNum){
+        public void sendButtonNum(String buttonNum){
             try{
-                dataOut.writeInt(buttonNum);
+                dataOut.writeChars(buttonNum);
                 dataOut.flush();
             } catch (IOException e) {
                 System.out.println("IOException from sendButtonNum() : ServerSideConnection");
+            }
+        }
+
+        public void send2dCharArray() {
+            try {
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        dataOut.writeChar(server2dChar[i][j]);
+                    }
+                }
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IOException from send2dCharArray() : ServerSideConnection");
             }
         }
 
@@ -158,9 +183,30 @@ public class GameServerT {
             return turnsMade >= maxTurns;
         }
 
-        public char[][] processGameLogic(String input){
-            return new char[3][3];
+            // I ASKED chatgtp to give be a better fromat instead of 2 sets fo 9 if statments
+        public void processGameLogicP1(String input) {
+            placeMove(input, 'X');  // P1 uses 'X'
         }
+
+        public void processGameLogicP2(String input) {
+            placeMove(input, 'O');  // P2 uses 'O'
+        }
+
+        private void placeMove(String input, char symbol) {
+            System.out.println("processGameLogic input: " + input);
+            int move = Integer.parseInt(input) - 1; // Convert input to index (0-based)
+            int row = move / 3;
+            int col = move % 3;
+
+            if (server2dChar[row][col] == ' ') { // Check if the cell is empty
+                server2dChar[row][col] = symbol;
+            } else {
+                System.out.println("Invalid move! Cell already occupied.");
+            }
+        }
+        // END of chatgtp tentious work
+
+
 
     }
 
