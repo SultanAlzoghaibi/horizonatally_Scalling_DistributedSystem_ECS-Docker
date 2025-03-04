@@ -14,6 +14,7 @@ public class PlayerT extends JFrame {
     private int width, height;
     private Container contentPane;
     private JTextArea message;
+    private JTextArea textGridMessage;
     private JButton b1,b2,b3,b4;
 
     private JButton b01,b02,b03,b04,b05,b06,b07,b08,b09;
@@ -42,6 +43,7 @@ public class PlayerT extends JFrame {
         height = h;
         contentPane = this.getContentPane();
         message = new JTextArea();
+        textGridMessage = new JTextArea();
 
         b01 = new JButton("1");
         b02 = new JButton("2");
@@ -70,28 +72,40 @@ public class PlayerT extends JFrame {
         contentPane = this.getContentPane();
         contentPane.setLayout(new BorderLayout());
 
-
+// Message at the top
         message = new JTextArea();
         message.setText("Turn-based game");
         message.setWrapStyleWord(true);
         message.setLineWrap(true);
         message.setEditable(false);
 
-
-        //asked chatGTP to setup for end gui fro testing
+        // ASKIED CHATGTP TO CREATE A DIPLAY OF textGridMessage which was not working//
+        // this is just for testing purposes and will be replaced by gui team
         contentPane.add(message, BorderLayout.NORTH);
-        ImageIcon icon = new ImageIcon("image.png");
-        // Create 3x3 grid for top buttons
-        JPanel topPanel = new JPanel(new GridLayout(3, 3));
 
-        // Create Top 3x3 Grid for Images
+// Create a panel to hold both textGridMessage and the image grid
+        JPanel centerPanel = new JPanel(new BorderLayout());
+
+// The text area for displaying game messages
+        textGridMessage = new JTextArea();
+        textGridMessage.setWrapStyleWord(true);
+        textGridMessage.setLineWrap(true);
+        textGridMessage.setEditable(false);
+        centerPanel.add(textGridMessage, BorderLayout.NORTH); // Place it at the top of center panel
+
+// Create 3x3 grid for images
+        ImageIcon icon = new ImageIcon("image.png");
+        JPanel topPanel = new JPanel(new GridLayout(3, 3));
         for (int i = 1; i <= 9; i++) {
             JLabel imageLabel = new JLabel(icon); // Add image labels
             topPanel.add(imageLabel);
         }
+        centerPanel.add(topPanel, BorderLayout.CENTER); // Place the images below textGridMessage
 
+// Now add centerPanel instead of just topPanel
+        contentPane.add(centerPanel, BorderLayout.CENTER);
 
-        // Create 3x3 grid for bottom buttons
+// Create 3x3 grid for buttons
         JPanel bottomPanel = new JPanel(new GridLayout(3, 3));
         bottomPanel.add(b01);
         bottomPanel.add(b02);
@@ -102,12 +116,8 @@ public class PlayerT extends JFrame {
         bottomPanel.add(b07);
         bottomPanel.add(b08);
         bottomPanel.add(b09);
-
-       // end of chatGTP
-
-        // Add both panels to contentPane
-        contentPane.add(topPanel, BorderLayout.CENTER);
         contentPane.add(bottomPanel, BorderLayout.SOUTH);
+        // END OF CHATGTP
 
         this.setVisible(true);
 
@@ -165,6 +175,9 @@ public class PlayerT extends JFrame {
 
                 message.setText(" You clicked button #" + strBNum + "now wait fo next player turn") ;
 
+
+                textGridMessage.setText(server2dCharToString());
+
                 turnsMade++;
                 System.out.println("Turns made: " + turnsMade);
 
@@ -209,12 +222,32 @@ public class PlayerT extends JFrame {
         b09.addActionListener(al);
 
     }
+    // ASKING CHATGTP FOR THIS TEDIOUS STRING FORMAT
+    public String server2dCharToString() {
+        StringBuilder sb = new StringBuilder();
+        for (char[] row : server2dChar) {
+            sb.append("["); // Start row
+            for (char cell : row) {
+                sb.append("['").append(cell).append("'], "); // Wrap each char in ['']
+            }
+            sb.setLength(sb.length() - 2); // Remove last comma & space
+            sb.append("]\n"); // End row and move to next line
+        }
+        return sb.toString();
+    }
+    // END OF CHATGTP
+
+    public void someMethod() {
+        String outputStr = server2dCharToString();
+        System.out.println(outputStr); // Print or use it as needed
+    }
 
 
     public void updateTurn(){
         String n = "N";
         n = csc.receiveButtonNum();
         message.setText("your opponent clicked #" + n + "now your Turn");
+        textGridMessage.setText(server2dCharToString());
 
         // prints the 2d ct from server
         for (char[] row : server2dChar) {

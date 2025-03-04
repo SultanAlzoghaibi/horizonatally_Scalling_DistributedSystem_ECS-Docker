@@ -123,8 +123,6 @@ public class GameServerT {
                         System.out.println("Payer 1 clicked button #" + player1ButtonNum);
                         // Update array
                         processGameLogicP1(player1ButtonNum);
-
-
                         for (char[] row : server2dChar) {
                             System.out.println(Arrays.toString(row));
                         }
@@ -135,12 +133,12 @@ public class GameServerT {
                     else{
                         player2ButtonNum = String.valueOf(dataIn.readChar());
                         System.out.println("Payer 2 clicked button #" + player2ButtonNum);
-                        processGameLogicP2(player1ButtonNum);
+                        System.out.println("input before p2" + player2ButtonNum);
+                        processGameLogicP2(player2ButtonNum);
 
                         for (char[] row : server2dChar) {
                             System.out.println(Arrays.toString(row));
                         }
-
                         player1.sendButtonNum(player2ButtonNum);
                         player1.send2dCharArray();
                     }
@@ -188,12 +186,18 @@ public class GameServerT {
             placeMove(input, 'X');  // P1 uses 'X'
         }
 
-        public void processGameLogicP2(String input) {
-            placeMove(input, 'O');  // P2 uses 'O'
+        public void processGameLogicP2(String input2) {
+            placeMove(input2, 'O');  // P2 uses 'O'
         }
 
         private void placeMove(String input, char symbol) {
-            System.out.println("processGameLogic input: " + input);
+            if (symbol == 'O'){
+                System.out.println("processGameLogic for player 2, input: " + input);
+            }
+            else {
+                System.out.println("processGameLogic for player 1, input: " + input);
+            }
+
             int move = Integer.parseInt(input) - 1; // Convert input to index (0-based)
             int row = move / 3;
             int col = move % 3;
