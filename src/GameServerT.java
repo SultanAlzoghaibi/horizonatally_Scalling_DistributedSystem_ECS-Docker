@@ -169,6 +169,7 @@ public class GameServerT {
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
                         dataOut.writeChar(server2dChar[i][j]);
+
                     }
                 }
                 dataOut.flush();
