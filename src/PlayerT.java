@@ -88,15 +88,17 @@ public class PlayerT extends JFrame {
             panel.add(startb00);
             panel.add(testText);
             contentPane.add(panel, BorderLayout.CENTER);
-            if (!gameIsActive) {
-                setUpMenuButtons();
-            }
 
+            setUpMenuButtons();
             this.setVisible(true);
 
     }
 
     public void setUpGUII(){
+        contentPane.removeAll();
+        contentPane.revalidate();
+        contentPane.repaint();
+
         gameIsActive = true;
         this.setSize(width, height);
         this.setTitle("The Game for Player #" + playerID);
@@ -203,7 +205,6 @@ public class PlayerT extends JFrame {
         ActionListener alStart = new ActionListener() {
             public void actionPerformed(ActionEvent StartAe) {
                 System.out.println(" YOU PRESSED THE BUTTON");
-                dispose(); // GTP says this closes the thing
                 gameIsActive = true;
                 connectToServer();
                 setUpGame1Buttons();
