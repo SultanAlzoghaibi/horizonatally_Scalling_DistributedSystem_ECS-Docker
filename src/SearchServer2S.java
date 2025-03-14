@@ -39,19 +39,11 @@ public class SearchServer2S {
         }
 
         //
-        for (int i = 0; i < server2dChar.length; i++) {
+        /*for (int i = 0; i < server2dChar.length; i++) {
             for (int j = 0; j < server2dChar[i].length; j++) {
                 server2dChar[i][j] = ' ';
             }
-        }
-
-        for (int i = 0; i < server2dChar.length; i++) {
-            for (int j = 0; j < server2dChar[i].length; j++) {
-                System.out.print("["+ server2dChar[i][j] + "]");
-            }
-            System.out.println();
-        }
-
+        }*/
 
 
 
@@ -112,23 +104,23 @@ public class SearchServer2S {
                 dataOut.writeInt(playerID);
                 dataOut.writeInt(maxTurns);
 
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        dataOut.writeChar(server2dChar[i][j]);
-                    }
-                }
                 dataOut.flush();
+                    while (true) {
+                        try {
 
-                    try {
-                        PlayerData tempPlayerData = new PlayerData(1,"Na", 1);
-                        //tempPlayerData = receivePlayerData();
-                        tempPlayerData.printPlayerData();
+                            tempPlayerData = (PlayerData) dataInObj.readObject();
+                            tempPlayerData.setUserId(playerID);
 
 
-                        playerDataArrayList.add(tempPlayerData);
+                            playerDataArrayList.add(tempPlayerData);
+                            System.out.println(" The playerDataArrayList: ");
+                            for (PlayerData playerData : playerDataArrayList) {
+                                playerData.printPlayerData();
+                            }
 
-                    } catch (Exception e) {
-                        System.out.println("ClassNotFoundException");
+                        } catch (Exception e) {
+                            System.out.println("ClassNotFoundException");
+                        }
                     }
 
 
@@ -137,84 +129,14 @@ public class SearchServer2S {
             }
         }
 
-
-        public PlayerData receivePlayerData() {
-            try {
-                ObjectInputStream objectIn = new ObjectInputStream(dataIn);
-                return (PlayerData) objectIn.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                System.out.println("IO exception in receivePlayerData");
-                return new PlayerData(0, "nA", 0);
-            }
-        }
-
-
-        public void sendButtonNum(String buttonNum){
-            try{
-                dataOut.writeChars(buttonNum);
-                dataOut.flush();
-            } catch (IOException e) {
-                System.out.println("IOException from sendButtonNum() : ServerSideConnection");
-            }
-        }
-
-        public void send2dCharArray() {
-            try {
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        dataOut.writeChar(server2dChar[i][j]);
-
-                    }
-                }
-                dataOut.flush();
-            } catch (IOException e) {
-                System.out.println("IOException from send2dCharArray() : ServerSideConnection");
-            }
-        }
-
-        public boolean endGame(){
-            return turnsMade >= maxTurns;
-        }
-
-            // I ASKED chatgtp to give be a better fromat instead of 2 sets fo 9 if statments
-        public void processGameLogicP1(String input) {
-            placeMove(input, 'X');  // P1 uses 'X'
-        }
-
-        public void processGameLogicP2(String input2) {
-            placeMove(input2, 'O');  // P2 uses 'O'
-        }
-
-        private void placeMove(String input, char symbol) {
-            if (symbol == 'O'){
-                System.out.println("processGameLogic for player 2, input: " + input);
-            }
-            else {
-                System.out.println("processGameLogic for player 1, input: " + input);
-            }
-
-            int move = Integer.parseInt(input) - 1; // Convert input to index (0-based)
-            int row = move / 3;
-            int col = move % 3;
-
-            if (server2dChar[row][col] == ' ') { // Check if the cell is empty
-                server2dChar[row][col] = symbol;
-            } else {
-                System.out.println("Invalid move! Cell already occupied.");
-            }
-        }
-        // END of chatgtp tentious work
-
-
-
     }
 
 
 
 
     public static void main(String[] args) {
-        SearchServer2S gs = new SearchServer2S();
-        gs.acceptConnections();
+        SearchServer2S searchS = new SearchServer2S();
+        searchS.acceptConnections();
 
     }
 }

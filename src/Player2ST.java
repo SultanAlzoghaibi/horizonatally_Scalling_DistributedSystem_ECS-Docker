@@ -43,7 +43,8 @@ public class Player2ST extends Application {
     private Button startb00;
     private Button b01, b02, b03, b04, b05, b06, b07, b08, b09;
 
-    private ClientSideConnection csc;
+    private CscToSearchServer cscSS;
+    private CscToGameServer cscGS;
     private int playerID;
     private int otherPlayerID;
     private int[] values;
@@ -238,8 +239,8 @@ public class Player2ST extends Application {
      * Called when a button (1-9) is clicked
      */
     private void hnadleB00Click(){
-        if (csc != null) {
-            csc.sendPlayerData(playerData);
+        if (cscSS != null) {
+            cscSS.sendPlayerData(playerData);
         }
 
     }
@@ -255,8 +256,8 @@ public class Player2ST extends Application {
         toggleButtons();
 
         // Send button to server
-        if (csc != null) {
-            csc.sendButtonNum(strBNum);
+        if (cscSS != null) {
+            cscGS.sendButtonNum(strBNum);
         }
 
         // If P2 hits max turns, check winner
@@ -287,7 +288,7 @@ public class Player2ST extends Application {
      * Connect to the server
      */
     public void connectToServer() {
-        csc = new ClientSideConnection();
+        cscSS = new CscToSearchServer();
 
     }
 
@@ -295,7 +296,7 @@ public class Player2ST extends Application {
      * Wait for the opponent's move
      */
     public void updateTurn() {
-        String n = csc.receiveButtonNum();
+        String n = cscGS.receiveButtonNum();
         message.setText("Your opponent clicked #" + n + ", now your turn");
         textGridMessage.setText(server2dCharToString());
 
@@ -327,7 +328,7 @@ public class Player2ST extends Application {
         } else {
             message.setText("It's a tie! Both have " + myPoints + " points.");
         }
-        csc.closeConnection();
+        cscGS.closeConnection();
     }
 
     /**
@@ -349,15 +350,82 @@ public class Player2ST extends Application {
     /**
      * The networking client side
      */
-    private class ClientSideConnection {
+    private class CscToGameServer {
         private Socket socket;
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
+        public CscToGameServer() {
+            System.out.println("Client side connection");
+            try {
+                socket = new Socket("localhost", 30000);
+                dataIn = new DataInputStream(socket.getInputStream());
+                dataOut = new DataOutputStream(socket.getOutputStream());
 
+                playerID = dataIn.readInt();
+                System.out.println("Player ID: " + playerID);
+
+                // Values to send over the network
+                maxTurns = dataIn.readInt() / 2;
+                System.out.println("maxTurns = " + maxTurns);
+
+                // Read the 3x3 char array from the server
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        server2dChar[i][j] = dataIn.readChar();
+                    }
+                }
+
+            } catch (IOException e) {
+                System.out.println("IO exception from CSC constructor");
+            }
+        }
+        public void sendButtonNum(String strBNum) {
+            try {
+                // Send button as chars
+                dataOut.writeChars(strBNum);
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection sendButtonNum");
+            }
+        }
+        public String receiveButtonNum() {
+            String str = "N"; // placeholder
+            try {
+                // read one char for the button number
+                str = String.valueOf(dataIn.readChar());
+                System.out.println("player #" + otherPlayerID + " clicked button #" + str);
+
+                // read updated board
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        server2dChar[i][j] = dataIn.readChar();
+                    }
+                }
+
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection receiveButtonNum");
+            }
+            return str;
+        }
+        public void closeConnection() {
+            try {
+                socket.close();
+                System.out.println("Closing connection");
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection closeConnection");
+            }
+        }
+    }
+
+
+    private class CscToSearchServer{
+        private Socket socket;
+        private DataInputStream dataIn;
+        private DataOutputStream dataOut;
         private ObjectOutputStream objectDataOut;
         private ObjectInputStream objectDataIn;
 
-        public ClientSideConnection() {
+        public CscToSearchServer() {
             System.out.println("Client side connection");
             try {
                 socket = new Socket("localhost", 30000);
@@ -374,11 +442,11 @@ public class Player2ST extends Application {
                 System.out.println("maxTurns = " + maxTurns);
 
                 // Read the 3x3 char array from the server
-                for (int i = 0; i < 3; i++) {
+                /*for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
                         server2dChar[i][j] = dataIn.readChar();
                     }
-                }
+                }*/
 
 
             } catch (IOException e) {
@@ -401,44 +469,7 @@ public class Player2ST extends Application {
 
 
 
-        public void sendButtonNum(String strBNum) {
-            try {
-                // Send button as chars
-                dataOut.writeChars(strBNum);
-                dataOut.flush();
-            } catch (IOException e) {
-                System.out.println("IO exception in ClientSideConnection sendButtonNum");
-            }
-        }
 
-        public String receiveButtonNum() {
-            String str = "N"; // placeholder
-            try {
-                // read one char for the button number
-                str = String.valueOf(dataIn.readChar());
-                System.out.println("player #" + otherPlayerID + " clicked button #" + str);
-
-                // read updated board
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        server2dChar[i][j] = dataIn.readChar();
-                    }
-                }
-
-            } catch (IOException e) {
-                System.out.println("IO exception in ClientSideConnection receiveButtonNum");
-            }
-            return str;
-        }
-
-        public void closeConnection() {
-            try {
-                socket.close();
-                System.out.println("Closing connection");
-            } catch (IOException e) {
-                System.out.println("IO exception in ClientSideConnection closeConnection");
-            }
-        }
     }
 
     public static void main(String[] args) {
