@@ -25,8 +25,10 @@ public class PlayerData implements Serializable {
     public void setUserId(int userId) {this.userId = userId;}
 
     public void printPlayerData() {
-        System.out.println("Username: " + username);
-        System.out.println("ELO: " + elo);
+        System.out.print("PlayerData = ");
+        System.out.print("[Username: " + username);
+        System.out.print(", ELO: " + elo);
+        System.out.print(", userId: " + userId + "]");
     }
 }
 

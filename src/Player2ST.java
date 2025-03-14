@@ -18,6 +18,22 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.Random;
 
+// ✅ Step 1: Confirm PlayerData Object is Created on Player2ST
+// - Initialize PlayerData with user ID, username, and ELO rating
+// - Print out all values to confirm correct creation
+
+// ✅ Step 2: Confirm PlayerData is Sent to Server
+// - Ensure sendPlayerData() actually sends the object using ObjectOutputStream
+// - Print a success message after sending
+
+// ✅ Step 3: Confirm PlayerData is Received by Server
+// - Read the PlayerData object from ObjectInputStream on the server side
+// - Print out received values to verify successful transmission
+
+// ✅ Step 4: Store PlayerData in an Array (Matchmaking Queue)
+// - Use an ArrayList to store PlayerData for matchmaking
+// - Ensure new players are properly added to the queue
+
 public class Player2ST extends Application {
 
     private static final int SHIFT_AMOUNT = 100;
@@ -45,10 +61,10 @@ public class Player2ST extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        createPlayerData();
         playerMenu(primaryStage);
     }
-    public void createPlayerData() {
+    public PlayerData createPlayerData() {
+
         Random rand = new Random();
         StringBuilder username = new StringBuilder();
         for (int i = 0; i < 3; i++) {
@@ -63,6 +79,10 @@ public class Player2ST extends Application {
         // Generate random Elo rating (0-99)
         playerData.setElo(rand.nextInt(100));
         playerData.setUsername(username.toString());
+        playerData.setUserId(rand.nextInt(100));
+
+        playerData.printPlayerData();
+        return playerData;
     }
 
 
@@ -88,13 +108,20 @@ public class Player2ST extends Application {
         testText = new TextArea("lol");
         testText.setEditable(false);
 
+        try {
+            playerData = createPlayerData();
+        }catch(Exception e) {
+            System.out.println("error");
+        }
+
+
         // "Start Game" button
         startb00 = new Button("Start Matchmaking");
         startb00.setOnAction(e -> {
             System.out.println("YOU PRESSED THE BUTTON");
-            gameIsActive = true;
-            connectToServer();   // Connect to the server
 
+            connectToServer();   // Connect to the server
+            hnadleB00Click();
             setUpLoadingScreen(primaryStage);
         });
 
@@ -210,6 +237,13 @@ public class Player2ST extends Application {
     /**
      * Called when a button (1-9) is clicked
      */
+    private void hnadleB00Click(){
+        if (csc != null) {
+            csc.sendPlayerData(playerData);
+        }
+
+    }
+
     private void handleButtonClick(String strBNum) {
         message.setText("You clicked button #" + strBNum + " now wait for next player's turn");
         textGridMessage.setText(server2dCharToString());
@@ -320,14 +354,17 @@ public class Player2ST extends Application {
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
 
+        private ObjectOutputStream objectDataOut;
+        private ObjectInputStream objectDataIn;
+
         public ClientSideConnection() {
             System.out.println("Client side connection");
             try {
                 socket = new Socket("localhost", 30000);
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
-                ObjectOutputStream objectDataOut = new ObjectOutputStream(dataOut);
-                ObjectInputStream objectDataIn = new ObjectInputStream(dataIn);
+                objectDataOut = new ObjectOutputStream(dataOut);
+                objectDataIn = new ObjectInputStream(dataIn);
 
                 playerID = dataIn.readInt();
                 System.out.println("Player ID: " + playerID);
@@ -335,13 +372,6 @@ public class Player2ST extends Application {
                 // Values to send over the network
                 maxTurns = dataIn.readInt() / 2;
                 System.out.println("maxTurns = " + maxTurns);
-
-                try{
-                    objectDataOut.writeObject(playerData);
-                    objectDataOut.flush();
-                } catch (IOException e) {
-                    System.out.println("Error writing out object");
-                }
 
                 // Read the 3x3 char array from the server
                 for (int i = 0; i < 3; i++) {
@@ -353,6 +383,19 @@ public class Player2ST extends Application {
 
             } catch (IOException e) {
                 System.out.println("IO exception from CSC constructor");
+            }
+        }
+
+        public void sendPlayerData(PlayerData playerData) {
+            try {
+                objectDataOut.writeObject(playerData);  // Write entire object
+                objectDataOut.flush();
+                System.out.print("PlayerData sent to server: ");
+                playerData.printPlayerData();
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection sendPlayerData: " + e.getMessage());
+            } catch (NullPointerException e) {
+                System.out.println("NullPointerException in ClientSideConnection sendPlayerData: " + e.getMessage());
             }
         }
 
