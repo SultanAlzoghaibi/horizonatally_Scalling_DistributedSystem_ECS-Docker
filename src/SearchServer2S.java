@@ -1,11 +1,11 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Arrays;
 
-public class GameServerT {
+
+public class SearchServer2S {
     private ServerSocket ss;
     private int numPlayers;
     private ServerSideConnection player1;
@@ -15,6 +15,8 @@ public class GameServerT {
     private int maxTurns;
     private int[] values;
     private char[][] server2dChar;
+    private ArrayList<PlayerData> playerDataArrayList = new ArrayList<>();
+    private PlayerData tempPlayerData;
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
@@ -23,13 +25,14 @@ public class GameServerT {
 
     private char[] gameBoard;
 
-    public GameServerT() {
+    public SearchServer2S() {
         System.out.println("--game server--");
         numPlayers = 0;
         turnsMade = 0;
         maxTurns = 90;
         values = new int[4];
         server2dChar = new char[3][3];
+        playerDataArrayList = new ArrayList<>();
 
         for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
             values[i] = i;
@@ -66,21 +69,16 @@ public class GameServerT {
         try {
             System.out.println("waiting for connections");
 
-            while (numPlayers < 2) {
+            while (numPlayers < 50) {
                 Socket s = ss.accept();
                 numPlayers++;
                 System.out.println("webSocketNotes.Player #" + numPlayers + " has joined the game");
                 ServerSideConnection ssc = new ServerSideConnection(s, numPlayers);
-                if (numPlayers == 1) {
-                    player1 = ssc;
-                } else {
-                    player2 = ssc;
-                }
 
                 Thread t = new Thread(ssc); //what ever is the in the ssc run in the new "THREAD"
                 t.start();
             }
-            System.out.println("2 player reach, no more looking for players");
+
         }catch(IOException e){
             System.out.println("IOException from game server acceptConnections");
         }
@@ -91,6 +89,8 @@ public class GameServerT {
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
         private int playerID;
+        private ObjectOutputStream dataOutObj;
+        private ObjectInputStream dataInObj;
 
 
         public ServerSideConnection(Socket s, int id){
@@ -100,6 +100,9 @@ public class GameServerT {
             try {
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
+                dataInObj = new ObjectInputStream(dataIn);
+                dataOutObj = new ObjectOutputStream(dataOut);
+
             } catch (IOException e) {
                 System.out.println("IOException from game server constructor: ServerSideConnection");
             }
@@ -116,41 +119,32 @@ public class GameServerT {
                 }
                 dataOut.flush();
 
+                    try {
+                        PlayerData tempPlayerData = new PlayerData(1,"Na", 1);
+                        //tempPlayerData = receivePlayerData();
+                        tempPlayerData.printPlayerData();
 
-                while (true) {
-                    if(playerID == 1){
-                        player1ButtonNum = String.valueOf(dataIn.readChar());  // Reads one char and converts to String // read it from player 1
-                        System.out.println("Payer 1 clicked button #" + player1ButtonNum);
-                        // Update array
-                        processGameLogicP1(player1ButtonNum);
-                        for (char[] row : server2dChar) {
-                            System.out.println(Arrays.toString(row));
-                        }
-                        player2.sendButtonNum(player1ButtonNum);
-                        player2.send2dCharArray(); // sending server2dChar
 
+                        playerDataArrayList.add(tempPlayerData);
+
+                    } catch (Exception e) {
+                        System.out.println("ClassNotFoundException");
                     }
-                    else{
-                        player2ButtonNum = String.valueOf(dataIn.readChar());
-                        System.out.println("Payer 2 clicked button #" + player2ButtonNum);
-                        System.out.println("input before p2" + player2ButtonNum);
-                        processGameLogicP2(player2ButtonNum);
 
-                        for (char[] row : server2dChar) {
-                            System.out.println(Arrays.toString(row));
-                        }
-                        player1.sendButtonNum(player2ButtonNum);
-                        player1.send2dCharArray();
-                    }
-                    turnsMade++;
 
-                    if(endGame()){
-                        System.out.println("Max turns reached");
-                        break; // break from the game and end
-                    }
-                }
             } catch (IOException e) {
                 System.out.println("IOException from run() : ServerSideConnection");
+            }
+        }
+
+
+        public PlayerData receivePlayerData() {
+            try {
+                ObjectInputStream objectIn = new ObjectInputStream(dataIn);
+                return (PlayerData) objectIn.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                System.out.println("IO exception in receivePlayerData");
+                return new PlayerData(0, "nA", 0);
             }
         }
 
@@ -219,7 +213,7 @@ public class GameServerT {
 
 
     public static void main(String[] args) {
-        GameServerT gs = new GameServerT();
+        SearchServer2S gs = new SearchServer2S();
         gs.acceptConnections();
 
     }

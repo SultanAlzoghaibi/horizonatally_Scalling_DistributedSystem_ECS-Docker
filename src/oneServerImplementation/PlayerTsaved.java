@@ -1,3 +1,12 @@
+/*
+package oneServerImplementation;
+
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -8,17 +17,18 @@ import java.io.IOException;
 import java.net.Socket;
 import java.util.Arrays;
 
-public class PlayerT extends JFrame {
+
+public class PlayerTsaved extends JFrame {
 
 
     private int width, height;
-    private Container contentPane;
-    private JTextArea message;
-    private JTextArea textGridMessage;
-    private JTextArea testText;
-    private JButton b1,b2,b3,b4;
+    private Pane contentPane; // JavaFX equivalent of Swing's Container
+    private TextArea message;
+    private TextArea textGridMessage;
+    private TextArea testText;
+    private Button b1, b2, b3, b4;
 
-    private JButton b01,b02,b03,b04,b05,b06,b07,b08,b09;
+    private Button b01, b02, b03, b04, b05, b06, b07, b08, b09;
 
     private ClientSideConnection csc;
     private int playerID;
@@ -33,35 +43,34 @@ public class PlayerT extends JFrame {
     private int enemyPoints;
     private boolean buttonsEnabled;
     private String playerInputSender;
-    private JButton startb00;
-    private boolean gameIsActive;
+
+    private Button startb00;
 
     // this will impliment the turn based aspect forcing the player
     // to wait the other players turn
 
 
 
-    public PlayerT(int w, int h) {
+    public PlayerTsaved(int w, int h) {
         width = w;
         height = h;
-        contentPane = this.getContentPane();
-        message = new JTextArea();
-        textGridMessage = new JTextArea();
-        gameIsActive = false;
-        testText = new JTextArea();
+        contentPane = new VBox(); // JavaFX equivalent of getContentPane()
+        message = new TextArea();
+        textGridMessage = new TextArea();
+        testText = new TextArea();
 
         // Buttons
-        startb00 = new JButton("Start Matchmaking");
+        startb00 = new Button("Start Matchmaking");
 
-        b01 = new JButton("1");
-        b02 = new JButton("2");
-        b03 = new JButton("3");
-        b04 = new JButton("4");
-        b05 = new JButton("5");
-        b06 = new JButton("6");
-        b07 = new JButton("7");
-        b08 = new JButton("8");
-        b09 = new JButton("9");
+        b01 = new Button("1");
+        b02 = new Button("2");
+        b03 = new Button("3");
+        b04 = new Button("4");
+        b05 = new Button("5");
+        b06 = new Button("6");
+        b07 = new Button("7");
+        b08 = new Button("8");
+        b09 = new Button("9");
         String playerInputSender;
 
         values = new int[4];
@@ -75,19 +84,24 @@ public class PlayerT extends JFrame {
     }
     public void playerMenu() {
 
-            this.setSize(width, height);
-            this.setTitle("The GameMenu");
-            this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            contentPane = this.getContentPane();
-            contentPane.setLayout(new BorderLayout());
-            testText = new JTextArea("lol");
+        primaryStage.setWidth(width);
+        primaryStage.setHeight(height);
+        primaryStage.setTitle("The GameMenu");
 
-            JPanel panel = new JPanel();
+        VBox contentPane = new VBox();
+        contentPane.setAlignment(Pos.CENTER);
+        contentPane.setSpacing(10);
 
-            startb00 = new JButton("Start Game");
-            panel.add(startb00);
-            panel.add(testText);
-            contentPane.add(panel, BorderLayout.CENTER);
+        TextArea testText = new TextArea("lol");
+        testText.setEditable(false);
+
+        Button startb00jx = new Button("Start Game");
+
+        contentPane.getChildren().addAll(startb00jx, testText);
+
+        Scene scene = new Scene(contentPane, width, height);
+        primaryStage.setScene(scene);
+
 
             setUpMenuButtons();
             this.setVisible(true);
@@ -164,10 +178,12 @@ public class PlayerT extends JFrame {
             message.setText("you are player 2, wait for your turn");
             otherPlayerID = 1;
             buttonsEnabled = false;
-             /* why thread? bc we don't want the net code to interrupt the gui display
+             */
+/* why thread? bc we don't want the net code to interrupt the gui display
             every read can interrupt the code sequence until you receive the request
             Hence you ruin a thread and don't interpret the gui field like messages or toggle button
-            */
+            *//*
+
             Thread t = new Thread(new Runnable() {
                 public void run() {
                     updateTurn();
@@ -409,11 +425,13 @@ public class PlayerT extends JFrame {
 
 
     public static void main(String[] args) {
-        PlayerT p = new PlayerT(800, 400);
+        PlayerTsaved p = new PlayerTsaved(800, 400);
         p.playerMenu();
         //p.Menu { includes [p.connectToServer();, GHAME SPCFIC :p.setUpGUII()  p.setUpButtons();]
-        /*p.connectToServer();
+        */
+/*p.connectToServer();
         p.setUpGUII(); //has startReceivingButtonNums in it
-        p.setUpButtons();*/
+        p.setUpButtons();*//*
+
     }
-}
+}*/

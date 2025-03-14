@@ -1,0 +1,404 @@
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+
+import java.io.*;
+
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.Random;
+
+public class Player2ST extends Application {
+
+    private static final int SHIFT_AMOUNT = 100;
+    private int width = 200, height = 600;
+
+    private TextArea message, textGridMessage, testText;
+    private Button startb00;
+    private Button b01, b02, b03, b04, b05, b06, b07, b08, b09;
+
+    private ClientSideConnection csc;
+    private int playerID;
+    private int otherPlayerID;
+    private int[] values;
+    private char[][] server2dChar;
+    private int maxTurns;
+    private int turnsMade;
+    private int myPoints;
+    private int enemyPoints;
+    private boolean buttonsEnabled;
+    private boolean gameIsActive;
+
+    PlayerData playerData;
+
+
+
+    @Override
+    public void start(Stage primaryStage) {
+        createPlayerData();
+        playerMenu(primaryStage);
+    }
+    public void createPlayerData() {
+        Random rand = new Random();
+        StringBuilder username = new StringBuilder();
+        for (int i = 0; i < 3; i++) {
+            char randomChar = (char) ('A' + rand.nextInt(26)); // Random letter from A-Z
+            username.append(randomChar);
+        }
+        PlayerData playerData = new PlayerData(
+                rand.nextInt(100),
+                username.toString(),
+                rand.nextInt(100));
+
+        // Generate random Elo rating (0-99)
+        playerData.setElo(rand.nextInt(100));
+        playerData.setUsername(username.toString());
+    }
+
+
+    public void playerMenu(Stage primaryStage) {
+        // CHAT GTP TRANSLATED THIS FROM SWING TO JAVAFX
+        primaryStage.setWidth(width);
+        primaryStage.setHeight(height);
+        primaryStage.setTitle("The Game Menu");
+
+        // Initialize arrays and variables
+        values = new int[4];
+        server2dChar = new char[3][3];
+        turnsMade = 0;
+        myPoints = 0;
+        enemyPoints = 0;
+        gameIsActive = false;
+        buttonsEnabled = false;
+
+        VBox menuLayout = new VBox();
+        menuLayout.setAlignment(Pos.CENTER);
+        menuLayout.setSpacing(10);
+
+        testText = new TextArea("lol");
+        testText.setEditable(false);
+
+        // "Start Game" button
+        startb00 = new Button("Start Matchmaking");
+        startb00.setOnAction(e -> {
+            System.out.println("YOU PRESSED THE BUTTON");
+            gameIsActive = true;
+            connectToServer();   // Connect to the server
+
+            setUpLoadingScreen(primaryStage);
+        });
+
+        menuLayout.getChildren().addAll(startb00, testText);
+
+        Scene menuScene = new Scene(menuLayout, width, height);
+        primaryStage.setScene(menuScene);
+
+        // 🔹 Add dynamic window shifting on each run
+        Random random = new Random();
+        double screenWidth = javafx.stage.Screen.getPrimary().getVisualBounds().getWidth();
+        int SHIFT_AMOUNT = 130; // Pixels to shift per instance
+        int newX = (random.nextInt(5) * SHIFT_AMOUNT) % (int) (screenWidth - width);
+        int newY = 100; // Fixed Y-position
+
+        primaryStage.setX(newX);
+        primaryStage.setY(newY);
+
+        primaryStage.show();
+        // end of CHAT GTP
+    }
+
+    private void setUpLoadingScreen(Stage primaryStage) {
+        gameIsActive = true;
+        primaryStage.setTitle("MATCHMAKING LOADING...");
+
+        // Main layout
+        VBox root = new VBox(15);
+        root.setPadding(new Insets(20));
+        root.setAlignment(Pos.CENTER);
+
+        // "MATCHMAKING LOADING..." Message
+        Label loadingMessage = new Label("MATCHMAKING LOADING...");
+
+        // Add elements to layout
+        root.getChildren().add(loadingMessage);
+
+        // Scene setup
+        Scene loadingScene = new Scene(root, width, height);
+        primaryStage.setScene(loadingScene);
+        primaryStage.show();
+    }
+
+    private void setUpGameScene(Stage primaryStage) {
+        // CHAT GTP TRANSLTED THIS FROM SWING TO JAVAFX
+        gameIsActive = true;
+        primaryStage.setTitle("The Game for Player #" + playerID);
+        VBox root = new VBox(10);
+        root.setPadding(new Insets(15));
+        root.setAlignment(Pos.CENTER);
+        message = new TextArea("Turn-based game");
+        message.setWrapText(true);
+        message.setEditable(false);
+        message.setMaxHeight(50);
+        root.getChildren().add(message);
+        textGridMessage = new TextArea();
+        textGridMessage.setWrapText(true);
+        textGridMessage.setEditable(false);
+        textGridMessage.setMaxHeight(50);
+        root.getChildren().add(textGridMessage);
+        GridPane buttonGrid = new GridPane();
+        buttonGrid.setHgap(10);
+        buttonGrid.setVgap(10);
+        buttonGrid.setAlignment(Pos.CENTER);
+        b01 = new Button("1");
+        b02 = new Button("2");
+        b03 = new Button("3");
+        b04 = new Button("4");
+        b05 = new Button("5");
+        b06 = new Button("6");
+        b07 = new Button("7");
+        b08 = new Button("8");
+        b09 = new Button("9");
+        buttonGrid.addRow(0, b01, b02, b03);
+        buttonGrid.addRow(1, b04, b05, b06);
+        buttonGrid.addRow(2, b07, b08, b09);
+        setUpGameButtons();
+        root.getChildren().add(buttonGrid);
+        Scene gameScene = new Scene(root, width, height);
+        primaryStage.setScene(gameScene);
+        primaryStage.show();
+        // END of CHAT GTP
+        if (playerID == 1) {
+            message.setText("You are player 1, you go first");
+            otherPlayerID = 2;
+            buttonsEnabled = true;
+        } else {
+            message.setText("You are player 2, wait for your turn");
+            otherPlayerID = 1;
+            buttonsEnabled = false;
+            // Start waiting for the opponent in a separate thread
+            Thread t = new Thread(this::updateTurn);
+            t.start();
+        }
+        toggleButtons();
+    }
+
+    /**
+     * Sets the onAction for each of the 9 game buttons.
+     */
+    private void setUpGameButtons() {
+        b01.setOnAction(e -> handleButtonClick("1"));
+        b02.setOnAction(e -> handleButtonClick("2"));
+        b03.setOnAction(e -> handleButtonClick("3"));
+        b04.setOnAction(e -> handleButtonClick("4"));
+        b05.setOnAction(e -> handleButtonClick("5"));
+        b06.setOnAction(e -> handleButtonClick("6"));
+        b07.setOnAction(e -> handleButtonClick("7"));
+        b08.setOnAction(e -> handleButtonClick("8"));
+        b09.setOnAction(e -> handleButtonClick("9"));
+    }
+
+    /**
+     * Called when a button (1-9) is clicked
+     */
+    private void handleButtonClick(String strBNum) {
+        message.setText("You clicked button #" + strBNum + " now wait for next player's turn");
+        textGridMessage.setText(server2dCharToString());
+
+        turnsMade++;
+        System.out.println("Turns made: " + turnsMade);
+
+        buttonsEnabled = false;
+        toggleButtons();
+
+        // Send button to server
+        if (csc != null) {
+            csc.sendButtonNum(strBNum);
+        }
+
+        // If P2 hits max turns, check winner
+        if (playerID == 2 && turnsMade == maxTurns) {
+            checkWinner();
+        } else {
+            // Otherwise wait for the opponent
+            new Thread(this::updateTurn).start();
+        }
+    }
+
+    /**
+     * Enables or disables the 9 game buttons based on 'buttonsEnabled'.
+     */
+    private void toggleButtons() {
+        b01.setDisable(!buttonsEnabled);
+        b02.setDisable(!buttonsEnabled);
+        b03.setDisable(!buttonsEnabled);
+        b04.setDisable(!buttonsEnabled);
+        b05.setDisable(!buttonsEnabled);
+        b06.setDisable(!buttonsEnabled);
+        b07.setDisable(!buttonsEnabled);
+        b08.setDisable(!buttonsEnabled);
+        b09.setDisable(!buttonsEnabled);
+    }
+
+    /**
+     * Connect to the server
+     */
+    public void connectToServer() {
+        csc = new ClientSideConnection();
+
+    }
+
+    /**
+     * Wait for the opponent's move
+     */
+    public void updateTurn() {
+        String n = csc.receiveButtonNum();
+        message.setText("Your opponent clicked #" + n + ", now your turn");
+        textGridMessage.setText(server2dCharToString());
+
+        // Print 2D array from the server
+        for (char[] row : server2dChar) {
+            System.out.println(Arrays.toString(row));
+        }
+
+        // If P1 hits max turns, check winner
+        if (playerID == 1 && turnsMade == maxTurns) {
+            checkWinner();
+        } else {
+            buttonsEnabled = true;
+        }
+        toggleButtons();
+    }
+
+    /**
+     * Checks who won or if it's a tie
+     */
+    private void checkWinner() {
+        buttonsEnabled = false;
+        // Compare 'myPoints' vs 'enemyPoints' if you actually tracked them
+        // Right now it's just a placeholder
+        if (myPoints > enemyPoints) {
+            message.setText("You won! You: " + myPoints + " points, Enemy: " + enemyPoints + " points");
+        } else if (myPoints < enemyPoints) {
+            message.setText("You lost! You: " + myPoints + " points, Enemy: " + enemyPoints + " points");
+        } else {
+            message.setText("It's a tie! Both have " + myPoints + " points.");
+        }
+        csc.closeConnection();
+    }
+
+    /**
+     * Converts server2dChar to a human-readable string
+     */
+    public String server2dCharToString() {
+        StringBuilder sb = new StringBuilder();
+        for (char[] row : server2dChar) {
+            sb.append("[");
+            for (char cell : row) {
+                sb.append("['").append(cell).append("'], ");
+            }
+            sb.setLength(sb.length() - 2); // remove trailing ", "
+            sb.append("]\n");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * The networking client side
+     */
+    private class ClientSideConnection {
+        private Socket socket;
+        private DataInputStream dataIn;
+        private DataOutputStream dataOut;
+
+        public ClientSideConnection() {
+            System.out.println("Client side connection");
+            try {
+                socket = new Socket("localhost", 30000);
+                dataIn = new DataInputStream(socket.getInputStream());
+                dataOut = new DataOutputStream(socket.getOutputStream());
+                ObjectOutputStream objectDataOut = new ObjectOutputStream(dataOut);
+                ObjectInputStream objectDataIn = new ObjectInputStream(dataIn);
+
+                playerID = dataIn.readInt();
+                System.out.println("Player ID: " + playerID);
+
+                // Values to send over the network
+                maxTurns = dataIn.readInt() / 2;
+                System.out.println("maxTurns = " + maxTurns);
+
+                try{
+                    objectDataOut.writeObject(playerData);
+                    objectDataOut.flush();
+                } catch (IOException e) {
+                    System.out.println("Error writing out object");
+                }
+
+                // Read the 3x3 char array from the server
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        server2dChar[i][j] = dataIn.readChar();
+                    }
+                }
+
+
+            } catch (IOException e) {
+                System.out.println("IO exception from CSC constructor");
+            }
+        }
+
+
+
+        public void sendButtonNum(String strBNum) {
+            try {
+                // Send button as chars
+                dataOut.writeChars(strBNum);
+                dataOut.flush();
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection sendButtonNum");
+            }
+        }
+
+        public String receiveButtonNum() {
+            String str = "N"; // placeholder
+            try {
+                // read one char for the button number
+                str = String.valueOf(dataIn.readChar());
+                System.out.println("player #" + otherPlayerID + " clicked button #" + str);
+
+                // read updated board
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        server2dChar[i][j] = dataIn.readChar();
+                    }
+                }
+
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection receiveButtonNum");
+            }
+            return str;
+        }
+
+        public void closeConnection() {
+            try {
+                socket.close();
+                System.out.println("Closing connection");
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection closeConnection");
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}

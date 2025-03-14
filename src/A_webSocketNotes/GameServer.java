@@ -1,4 +1,4 @@
-package webSocketNotes;
+package A_webSocketNotes;
 
 import java.net.*;
 import java.io.*;

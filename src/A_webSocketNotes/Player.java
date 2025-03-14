@@ -1,4 +1,4 @@
-package webSocketNotes;
+package A_webSocketNotes;
 
 import javax.swing.*;
 import java.awt.*;
@@ -6,13 +6,20 @@ import java.net.*;
 import java.io.*;
 import java.awt.event.*;
 
+
+
+
 public class Player extends JFrame {
 
 
     private int width, height;
+
     private Container contentPane;
     private JTextArea message;
     private JButton b1,b2,b3,b4;
+
+
+
     private ClientSideConnection csc;
     private int playerID;
     private int otherPlayerID;
