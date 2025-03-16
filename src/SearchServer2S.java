@@ -1,8 +1,10 @@
+import javax.xml.transform.Source;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 
 
 public class SearchServer2S {
@@ -37,7 +39,7 @@ public class SearchServer2S {
 
 
         playerDataArrayList = new ArrayList<>();
-        portNumIncrement = 3;
+        portNumIncrement = 0;
 
 
         //
@@ -51,9 +53,22 @@ public class SearchServer2S {
         try{
             ss = new ServerSocket(30000);
         } catch(IOException e){
-            System.out.println("IOException from game server constructor");
+            System.err.println("Port 30000 already in use, pick another port or close the running instance.");
             e.printStackTrace();
+            System.exit(1);
         }
+        // From chatGTP as a way to close the socket if inteliji/Java does nto do it automatically
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if(ss != null && !ss.isClosed()){
+                    ss.close();
+                    System.out.println("Server socket closed gracefully.");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+        // End of chatGTP
     }
 
     class SscPlayerData {
@@ -79,9 +94,14 @@ public class SearchServer2S {
         }
 
         public void printConnectionDetails() {
-            System.out.println("PlayerData: ");
-            playerData.printPlayerData();
-            System.out.println("Connection: " + ssc.toString());
+            System.out.print("PlayerData: ");
+            System.out.print("User ID: " + playerData.getUserId() + ", ");
+            System.out.print("Username: " + playerData.getUsername() + ", ");
+            System.out.print("ELO: " + playerData.getElo() + " | ");
+
+            System.out.print("Connection: ");
+            System.out.print("Player ID: " + ssc.getPlayerID() + ", ");
+            System.out.println("Socket: " + ssc.getSocketPort());
         }
     }
 
@@ -135,8 +155,9 @@ public class SearchServer2S {
                 dataOut.writeInt(maxTurns);
 
                 dataOut.flush();
+                try {
                     while (true) {
-                        try {
+
 
                             tempPlayerData = (PlayerData) dataInObj.readObject();
                             tempPlayerData.setUserId(playerID);
@@ -153,7 +174,8 @@ public class SearchServer2S {
                             Thread t = new Thread(new Runnable() {
                                 public void run() {
                                     try {
-                                        Thread.sleep(10000); // Wait 10 seconds for players to join
+                                        System.out.println("matchMakingToElo()");
+                                        Thread.sleep(100); // Wait 10 seconds for players to join
                                         matchMakingToElo();
                                     } catch (InterruptedException e) {
                                         e.printStackTrace();
@@ -162,11 +184,10 @@ public class SearchServer2S {
                             });
                             t.start();
 
-
-                        } catch (Exception e) {
-                            System.out.println("ClassNotFoundException");
-                        }
                     }
+                } catch (Exception e) {
+                    System.out.println("ClassNotFoundException");
+                }
 
 
             } catch (IOException e) {
@@ -175,21 +196,37 @@ public class SearchServer2S {
         }
 
         public void matchMakingToElo(){
-            if(sscPlayerDataArrayList.size() > 2){
 
+            if(sscPlayerDataArrayList.size() >= 2){
+                System.out.println("sscPlayerDataArrayList >= 2");
                 SscPlayerData player1 = sscPlayerDataArrayList.removeFirst();
                 SscPlayerData player2 = sscPlayerDataArrayList.removeFirst();
-
                 portNumIncrement++;
+                //portNumIncrement = 1;
+                int portNumber = 30000 + portNumIncrement;
+                String strPortNumber = Integer.toString(portNumber);
 
+                //ASKED chatGTP fro porces builder file path ans
+                ProcessBuilder pb = new ProcessBuilder(
+                        "java",
+                        "-cp",
+                        "/Users/sultan/Desktop/seng-300/JavaWebSockets/out/production/JavaWebSockets",
+                        "GameServer2ST",
+                        strPortNumber
+                );
 
-            new Thread(() -> {
+                try {
+                    Process process = pb.start(); // storing the process but might not use tho.
+                    System.out.println("Launched GameServer2ST on port: " + strPortNumber);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //End of chatGTP
 
-                        sendserverPortNumber(portNumIncrement);
-                        sendserverPortNumber(portNumIncrement);
-
-
-                });
+                player1.getSsc().sendserverPortNumber(portNumber);
+                player2.getSsc().sendserverPortNumber(portNumber);
+                System.out.println( "sent them port num: " + portNumber);
+                System.exit(0);
 
             }
         }
@@ -204,6 +241,17 @@ public class SearchServer2S {
             }
 
         }
+
+        private int getPlayerID(){
+            return playerID;
+        }
+
+        private int getSocketPort(){
+            return socket.getLocalPort();
+        }
+
+
+
     }
 
 

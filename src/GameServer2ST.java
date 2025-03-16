@@ -15,6 +15,7 @@ public class GameServer2ST {
     private int maxTurns;
     private int[] values;
     private char[][] server2dChar;
+    private static int portNumber;
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
@@ -23,7 +24,7 @@ public class GameServer2ST {
 
     private char[] gameBoard;
 
-    public GameServer2ST() {
+    public GameServer2ST(int portNumber) {
         System.out.println("--game server--");
         numPlayers = 0;
         turnsMade = 0;
@@ -53,11 +54,24 @@ public class GameServer2ST {
 
 
         try{
-            ss = new ServerSocket(30000);
+            ss = new ServerSocket(portNumber);
         } catch(IOException e){
             System.out.println("IOException from game server constructor");
             e.printStackTrace();
         }
+
+        // From chatGTP as a way to close the socket if inteliji/Java does nto do it automatically
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if(ss != null && !ss.isClosed()){
+                    ss.close();
+                    System.out.println("Server socket closed gracefully.");
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+        // End of chatGTP
     }
 
 
@@ -219,7 +233,14 @@ public class GameServer2ST {
 
 
     public static void main(String[] args) {
-        GameServer2ST gs = new GameServer2ST();
+        System.out.println(args);
+        if (args.length == 1) {
+            portNumber = Integer.parseInt(args[0]);
+        } else {
+            System.out.println("Port number required as an argument.");
+        }
+
+        GameServer2ST gs = new GameServer2ST(portNumber);
         gs.acceptConnections();
 
     }

@@ -38,7 +38,7 @@ public class GameServer {
 
 
         try{
-            ss = new ServerSocket(30000);
+            ss = new ServerSocket(30001);
         } catch(IOException e){
             System.out.println("IOException from game server constructor");
             e.printStackTrace();

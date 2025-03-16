@@ -1,4 +1,5 @@
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -12,6 +13,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import javax.xml.transform.Source;
 import java.io.*;
 
 import java.net.Socket;
@@ -55,6 +57,8 @@ public class Player2ST extends Application {
     private int enemyPoints;
     private boolean buttonsEnabled;
     private boolean gameIsActive;
+    private int gameServerPort;
+    private Stage primaryStage;
 
     PlayerData playerData;
 
@@ -62,6 +66,7 @@ public class Player2ST extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
         playerMenu(primaryStage);
     }
     public PlayerData createPlayerData() {
@@ -121,7 +126,7 @@ public class Player2ST extends Application {
         startb00.setOnAction(e -> {
             System.out.println("YOU PRESSED THE BUTTON");
 
-            connectToServer();   // Connect to the server
+            connectToSearchServer();   // Connect to the server
             hnadleB00Click();
             setUpLoadingScreen(primaryStage);
         });
@@ -256,7 +261,7 @@ public class Player2ST extends Application {
         toggleButtons();
 
         // Send button to server
-        if (cscSS != null) {
+        if (cscGS != null) {
             cscGS.sendButtonNum(strBNum);
         }
 
@@ -287,9 +292,13 @@ public class Player2ST extends Application {
     /**
      * Connect to the server
      */
-    public void connectToServer() {
+    public void connectToSearchServer() {
         cscSS = new CscToSearchServer();
 
+    }
+    public void connectToGameServer(){
+        cscGS = new CscToGameServer();
+        System.out.println("Welcome to the game server");
     }
 
     /**
@@ -304,7 +313,6 @@ public class Player2ST extends Application {
         for (char[] row : server2dChar) {
             System.out.println(Arrays.toString(row));
         }
-
         // If P1 hits max turns, check winner
         if (playerID == 1 && turnsMade == maxTurns) {
             checkWinner();
@@ -357,7 +365,7 @@ public class Player2ST extends Application {
         public CscToGameServer() {
             System.out.println("Client side connection");
             try {
-                socket = new Socket("localhost", 30000);
+                socket = new Socket("localhost", gameServerPort);
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
 
@@ -441,12 +449,8 @@ public class Player2ST extends Application {
                 maxTurns = dataIn.readInt() / 2;
                 System.out.println("maxTurns = " + maxTurns);
 
-                // Read the 3x3 char array from the server
-                /*for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        server2dChar[i][j] = dataIn.readChar();
-                    }
-                }*/
+
+                waitForGameServerPortThread();
 
 
             } catch (IOException e) {
@@ -467,7 +471,41 @@ public class Player2ST extends Application {
             }
         }
 
+        private void waitForGameServerPortThread() {
+            Thread portReceiver = new Thread(() -> {
+                try {
+                    // Block and wait until the port number arrives:
+                    gameServerPort = dataIn.readInt();
+                    System.out.println("Received GameServer port: " + gameServerPort);
+                    if(gameServerPort > 30000) {
+                        closeConnection();
+                        connectToGameServer();
 
+                        // Chatgtp said u can so primary stage unless its with this
+                        // Platform.runLater javaFX special thread
+                        Platform.runLater(() -> {
+                            if (primaryStage != null) {
+                                setUpGameScene(primaryStage);
+                            }
+                        });
+                    }
+
+                } catch (IOException e) {
+                    System.out.println("Error receiving port: " + e.getMessage());
+                }
+            });
+            portReceiver.start();
+        }
+
+
+        public void closeConnection() {
+            try {
+                socket.close();
+                System.out.println("Closing connection");
+            } catch (IOException e) {
+                System.out.println("IO exception in ClientSideConnection closeConnection");
+            }
+        }
 
 
     }
