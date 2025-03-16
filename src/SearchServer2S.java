@@ -254,12 +254,33 @@ public class SearchServer2S {
 
     }
 
-
+    public void closeServer() {
+        try {
+            if (ss != null && !ss.isClosed()) {
+                ss.close();
+                System.out.println("Server socket closed.");
+            }
+        } catch (IOException e) {
+            System.out.println("Error closing server socket: " + e.getMessage());
+        }
+    }
 
 
     public static void main(String[] args) {
         SearchServer2S searchS = new SearchServer2S();
-        searchS.acceptConnections();
 
+        // Add shutdown hook to ensure the server socket closes when stopped
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutdown detected. Closing server socket...");
+            searchS.closeServer();
+        }));
+
+        try {
+            searchS.acceptConnections();
+        } catch (Exception e) {
+            System.out.println("Server shutting down...");
+        } finally {
+            searchS.closeServer();
+        }
     }
 }

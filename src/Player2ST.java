@@ -292,13 +292,46 @@ public class Player2ST extends Application {
     /**
      * Connect to the server
      */
+
+
     public void connectToSearchServer() {
         cscSS = new CscToSearchServer();
 
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutdown detected. Closing Search Server connection...");
+            closeSearchServerConnection();
+        }));
     }
-    public void connectToGameServer(){
+    public void connectToGameServer() {
         cscGS = new CscToGameServer();
         System.out.println("Welcome to the game server");
+
+        // 🔹 Add shutdown hook to close the connection when app stops
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutdown detected. Closing Game Server connection...");
+            closeGameServerConnection();
+        }));
+    }
+    private void closeGameServerConnection() {
+        try {
+            if (cscGS != null && cscGS.getSocket() != null && !cscGS.getSocket().isClosed()) {
+                cscGS.getSocket().close();
+                System.out.println("Game Server socket closed.");
+            }
+        } catch (IOException e) {
+            System.out.println("Error closing Game Server socket: " + e.getMessage());
+        }
+    }
+    private void closeSearchServerConnection() {
+        try {
+            if (cscSS != null && cscSS.getSocket() != null && !cscSS.getSocket().isClosed()) {
+                cscSS.getSocket().close();
+                System.out.println("Search Server socket closed.");
+            }
+        } catch (IOException e) {
+            System.out.println("Error closing Search Server socket: " + e.getMessage());
+        }
     }
 
     /**
@@ -423,6 +456,10 @@ public class Player2ST extends Application {
                 System.out.println("IO exception in ClientSideConnection closeConnection");
             }
         }
+
+        public Socket getSocket() {
+            return socket;
+        }
     }
 
 
@@ -507,7 +544,9 @@ public class Player2ST extends Application {
             }
         }
 
-
+        public Socket getSocket() {
+            return socket;
+        }
     }
 
     public static void main(String[] args) {

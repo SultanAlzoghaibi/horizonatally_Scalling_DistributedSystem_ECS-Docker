@@ -229,19 +229,43 @@ public class GameServer2ST {
 
     }
 
-
+    public void closeServer() {
+        try {
+            if (ss != null && !ss.isClosed()) {
+                ss.close();
+                System.out.println("Server socket closed.");
+            }
+        } catch (IOException e) {
+            System.out.println("Error closing server socket: " + e.getMessage());
+        }
+    }
 
 
     public static void main(String[] args) {
-        System.out.println(args);
+        System.out.println(Arrays.toString(args));  // Print arguments for debugging
+
+        int portNumber;
         if (args.length == 1) {
             portNumber = Integer.parseInt(args[0]);
         } else {
             System.out.println("Port number required as an argument.");
+            return;  // Exit early if no port is provided
         }
 
         GameServer2ST gs = new GameServer2ST(portNumber);
-        gs.acceptConnections();
 
+        // From CAHTGTP Add shutdown hook to close the socket when stopping the program
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutdown detected. Closing server socket...");
+            gs.closeServer();
+        }));
+
+        try {
+            gs.acceptConnections();
+        } catch (Exception e) {
+            System.out.println("Server shutting down...");
+        } finally {
+            gs.closeServer();
+        }
     }
 }
