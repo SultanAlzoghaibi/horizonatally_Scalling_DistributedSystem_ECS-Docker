@@ -26,7 +26,7 @@ public class GameServerT {
     private char[] gameBoard;
 
     public GameServerT() {
-        System.out.println("--game server--");
+        System.out.println("--search server--");
         numPlayers = 0;
         turnsMade = 0;
         maxTurns = 90;
@@ -88,7 +88,7 @@ public class GameServerT {
         }
     }
 
-    private class ServerSideConnection implements Runnable{
+    public class ServerSideConnection implements Runnable{
         private Socket socket;
         private DataInputStream dataIn;
         private DataOutputStream dataOut;

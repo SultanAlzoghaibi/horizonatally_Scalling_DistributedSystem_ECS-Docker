@@ -13,10 +13,12 @@ public class SearchServer2S {
     private ServerSideConnection player2;
     private int turnsMade;
     private int maxTurns;
-    private int[] values;
+    private ArrayList<SscPlayerData> sscPlayerDataArrayList = new ArrayList<>();
+
     private char[][] server2dChar;
     private ArrayList<PlayerData> playerDataArrayList = new ArrayList<>();
     private PlayerData tempPlayerData;
+    private int portNumIncrement;
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
@@ -30,13 +32,13 @@ public class SearchServer2S {
         numPlayers = 0;
         turnsMade = 0;
         maxTurns = 90;
-        values = new int[4];
-        server2dChar = new char[3][3];
-        playerDataArrayList = new ArrayList<>();
 
-        for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
-            values[i] = i;
-        }
+        server2dChar = new char[3][3];
+
+
+        playerDataArrayList = new ArrayList<>();
+        portNumIncrement = 3;
+
 
         //
         /*for (int i = 0; i < server2dChar.length; i++) {
@@ -46,12 +48,40 @@ public class SearchServer2S {
         }*/
 
 
-
         try{
             ss = new ServerSocket(30000);
         } catch(IOException e){
             System.out.println("IOException from game server constructor");
             e.printStackTrace();
+        }
+    }
+
+    class SscPlayerData {
+        PlayerData playerData;
+        ServerSideConnection ssc;
+
+        public SscPlayerData(PlayerData playerData, ServerSideConnection connection) {
+            this.playerData = playerData;
+            this.ssc = connection;
+        }
+
+        public void setPlayerData(PlayerData playerData) {
+            this.playerData = playerData;
+        }
+        public PlayerData getPlayerData() {
+            return playerData;
+        }
+        public ServerSideConnection getSsc() {
+            return ssc;
+        }
+        public void setSsc(ServerSideConnection ssc) {
+            this.ssc = ssc;
+        }
+
+        public void printConnectionDetails() {
+            System.out.println("PlayerData: ");
+            playerData.printPlayerData();
+            System.out.println("Connection: " + ssc.toString());
         }
     }
 
@@ -76,7 +106,7 @@ public class SearchServer2S {
         }
     }
 
-    private class ServerSideConnection implements Runnable{
+    public class ServerSideConnection implements Runnable{
         private Socket socket;
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
@@ -110,13 +140,28 @@ public class SearchServer2S {
 
                             tempPlayerData = (PlayerData) dataInObj.readObject();
                             tempPlayerData.setUserId(playerID);
+                            SscPlayerData tempsscPlayerData = new SscPlayerData(tempPlayerData, this);
+                            sscPlayerDataArrayList.add(tempsscPlayerData);
+                            tempsscPlayerData.printConnectionDetails();
 
 
-                            playerDataArrayList.add(tempPlayerData);
-                            System.out.println(" The playerDataArrayList: ");
-                            for (PlayerData playerData : playerDataArrayList) {
-                                playerData.printPlayerData();
+                            System.out.println(" The sscPlayerDataArrayList: ");
+                            for (SscPlayerData sscPlayerData : sscPlayerDataArrayList) {
+                                sscPlayerData.printConnectionDetails();
                             }
+
+                            Thread t = new Thread(new Runnable() {
+                                public void run() {
+                                    try {
+                                        Thread.sleep(10000); // Wait 10 seconds for players to join
+                                        matchMakingToElo();
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            });
+                            t.start();
+
 
                         } catch (Exception e) {
                             System.out.println("ClassNotFoundException");
@@ -129,6 +174,36 @@ public class SearchServer2S {
             }
         }
 
+        public void matchMakingToElo(){
+            if(sscPlayerDataArrayList.size() > 2){
+
+                SscPlayerData player1 = sscPlayerDataArrayList.removeFirst();
+                SscPlayerData player2 = sscPlayerDataArrayList.removeFirst();
+
+                portNumIncrement++;
+
+
+            new Thread(() -> {
+
+                        sendserverPortNumber(portNumIncrement);
+                        sendserverPortNumber(portNumIncrement);
+
+
+                });
+
+            }
+        }
+
+
+        public void sendserverPortNumber(int portNum){
+            try{
+                dataOut.writeInt(portNum);
+                dataOut.flush();
+            } catch (Exception e) {
+                System.out.println("Exception in sendserverPortNumber");
+            }
+
+        }
     }
 
 

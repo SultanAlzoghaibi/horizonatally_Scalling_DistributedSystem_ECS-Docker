@@ -1,6 +1,9 @@
+import oneServerImplementation.GameServerT;
+
 import java.io.Serializable;
 
-public class PlayerData implements Serializable {
+
+public class PlayerData implements Serializable{
     private static final long serialVersionUID = 1L;
     private int userId;
     private String username;
@@ -11,6 +14,7 @@ public class PlayerData implements Serializable {
         this.userId = userId;
         this.username = username;
         this.elo = elo;
+
     }
     public int getUserId() {return userId;}
 
