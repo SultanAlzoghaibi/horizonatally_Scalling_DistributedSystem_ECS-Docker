@@ -1,10 +1,7 @@
-import javax.xml.transform.Source;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Arrays;
-
 
 
 public class SearchServer2S {
@@ -30,15 +27,20 @@ public class SearchServer2S {
     private char[] gameBoard;
 
     public SearchServer2S() {
-        System.out.println("--game server--");
+        System.out.println("--search server--");
         numPlayers = 0;
         turnsMade = 0;
         maxTurns = 90;
 
         server2dChar = new char[3][3];
 
+        Socket stubSocket = null;
 
+
+       /* ServerSideConnection stubSsc = new ServerSideConnection( stubSocket, numPlayers);
         playerDataArrayList = new ArrayList<>();
+        playerDataArrayList.add(new SscPlayerData(new PlayerData(0, "stub", 0), stubSsc).getPlayerData());
+*/
         portNumIncrement = 0;
 
 
@@ -75,9 +77,9 @@ public class SearchServer2S {
         PlayerData playerData;
         ServerSideConnection ssc;
 
-        public SscPlayerData(PlayerData playerData, ServerSideConnection connection) {
+        public SscPlayerData(PlayerData playerData, Runnable connection) {
             this.playerData = playerData;
-            this.ssc = connection;
+            this.ssc = (ServerSideConnection) connection;
         }
 
         public void setPlayerData(PlayerData playerData) {
@@ -140,58 +142,80 @@ public class SearchServer2S {
             playerID = id;
 
             try {
-                dataIn = new DataInputStream(socket.getInputStream());
+
                 dataOut = new DataOutputStream(socket.getOutputStream());
-                dataInObj = new ObjectInputStream(dataIn);
                 dataOutObj = new ObjectOutputStream(dataOut);
+
+                dataIn = new DataInputStream(socket.getInputStream());
+                dataInObj = new ObjectInputStream(dataIn);
 
             } catch (IOException e) {
                 System.out.println("IOException from game server constructor: ServerSideConnection");
             }
         }
-        public void run(){ // insctruction we want to run on a NEW thread
+        public void run() {
             try {
-                dataOut.writeInt(playerID);
-                dataOut.writeInt(maxTurns);
-
-                dataOut.flush();
-                try {
-                    while (true) {
-
-
+                while (true) {
+                    if (dataIn.available() > 0) {
+                        try {
                             tempPlayerData = (PlayerData) dataInObj.readObject();
                             tempPlayerData.setUserId(playerID);
                             SscPlayerData tempsscPlayerData = new SscPlayerData(tempPlayerData, this);
                             sscPlayerDataArrayList.add(tempsscPlayerData);
                             tempsscPlayerData.printConnectionDetails();
 
-
                             System.out.println(" The sscPlayerDataArrayList: ");
                             for (SscPlayerData sscPlayerData : sscPlayerDataArrayList) {
                                 sscPlayerData.printConnectionDetails();
                             }
 
-                            Thread t = new Thread(new Runnable() {
-                                public void run() {
-                                    try {
-                                        System.out.println("matchMakingToElo()");
-                                        Thread.sleep(100); // Wait 10 seconds for players to join
-                                        matchMakingToElo();
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
+                            Thread t = new Thread(() -> {
+                                try {
+                                    System.out.println("matchMakingToElo()");
+                                    Thread.sleep(100);
+                                    matchMakingToElo();
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
                                 }
                             });
                             t.start();
 
+                        } catch (Exception e) {
+                            System.out.println("ClassNotFoundException: " + e.getMessage());
+                            break; // 🔴 Break the loop if an error occurs to avoid spamming
+                        }
+                    } else {
+                        Thread.sleep(100); // if no data run a timer effectly creating a
+                        // 1 sec tick rate and no null erros one a handshake deal had been made
                     }
-                } catch (Exception e) {
-                    System.out.println("ClassNotFoundException");
                 }
+            } catch (IOException | InterruptedException e) {
+                System.out.println("IOException from run() : ServerSideConnection " + e.getMessage());
+            } finally {
+                closeConnection(); // 🔴 Ensure the socket is closed properly
+            }
+        }
 
-
+        public void closeConnection() { // ask chatgtp to fill our this method
+            try {
+                if (dataInObj != null) {
+                    dataInObj.close();
+                }
+                if (dataOutObj != null) {
+                    dataOutObj.close();
+                }
+                if (dataIn != null) {
+                    dataIn.close();
+                }
+                if (dataOut != null) {
+                    dataOut.close();
+                }
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
+                System.out.println("Connection closed for Player ID: " + playerID);
             } catch (IOException e) {
-                System.out.println("IOException from run() : ServerSideConnection");
+                System.out.println("Error closing connection: " + e.getMessage());
             }
         }
 
@@ -215,6 +239,7 @@ public class SearchServer2S {
                         strPortNumber
                 );
 
+
                 try {
                     Process process = pb.start(); // storing the process but might not use tho.
                     System.out.println("Launched GameServer2ST on port: " + strPortNumber);
@@ -226,7 +251,8 @@ public class SearchServer2S {
                 player1.getSsc().sendserverPortNumber(portNumber);
                 player2.getSsc().sendserverPortNumber(portNumber);
                 System.out.println( "sent them port num: " + portNumber);
-                System.exit(0);
+                //System.exit(0);
+
 
             }
         }

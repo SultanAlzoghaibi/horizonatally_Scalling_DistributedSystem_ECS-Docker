@@ -112,8 +112,9 @@ public class GameServer2ST {
             playerID = id;
 
             try {
-                dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
+                dataIn = new DataInputStream(socket.getInputStream());
+
             } catch (IOException e) {
                 System.out.println("IOException from game server constructor: ServerSideConnection");
             }

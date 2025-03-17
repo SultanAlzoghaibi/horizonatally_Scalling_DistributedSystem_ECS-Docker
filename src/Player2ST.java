@@ -267,7 +267,8 @@ public class Player2ST extends Application {
 
         // If P2 hits max turns, check winner
         if (playerID == 2 && turnsMade == maxTurns) {
-            checkWinner();
+            System.out.println("win condition?");
+            //checkWinner();
         } else {
             // Otherwise wait for the opponent
             new Thread(this::updateTurn).start();
@@ -348,7 +349,8 @@ public class Player2ST extends Application {
         }
         // If P1 hits max turns, check winner
         if (playerID == 1 && turnsMade == maxTurns) {
-            checkWinner();
+            System.out.println("win condition?");
+            //checkWinner();
         } else {
             buttonsEnabled = true;
         }
@@ -399,8 +401,9 @@ public class Player2ST extends Application {
             System.out.println("Client side connection");
             try {
                 socket = new Socket("localhost", gameServerPort);
-                dataIn = new DataInputStream(socket.getInputStream());
+
                 dataOut = new DataOutputStream(socket.getOutputStream());
+                dataIn = new DataInputStream(socket.getInputStream());
 
                 playerID = dataIn.readInt();
                 System.out.println("Player ID: " + playerID);
@@ -474,17 +477,19 @@ public class Player2ST extends Application {
             System.out.println("Client side connection");
             try {
                 socket = new Socket("localhost", 30000);
-                dataIn = new DataInputStream(socket.getInputStream());
+
                 dataOut = new DataOutputStream(socket.getOutputStream());
                 objectDataOut = new ObjectOutputStream(dataOut);
+
+                dataIn = new DataInputStream(socket.getInputStream());
                 objectDataIn = new ObjectInputStream(dataIn);
 
-                playerID = dataIn.readInt();
-                System.out.println("Player ID: " + playerID);
+                //playerID = dataIn.readInt();
+                //System.out.println("Player ID: " + playerID);
 
                 // Values to send over the network
-                maxTurns = dataIn.readInt() / 2;
-                System.out.println("maxTurns = " + maxTurns);
+                //maxTurns = dataIn.readInt() / 2;
+                //System.out.println("maxTurns = " + maxTurns);
 
 
                 waitForGameServerPortThread();
