@@ -398,7 +398,7 @@ public class Player2ST extends Application {
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
         public CscToGameServer() {
-            System.out.println("Client side connection");
+            System.out.println("Client side connection -- GameServerr");
             try {
                 socket = new Socket("localhost", gameServerPort);
 
@@ -474,14 +474,14 @@ public class Player2ST extends Application {
         private ObjectInputStream objectDataIn;
 
         public CscToSearchServer() {
-            System.out.println("Client side connection");
+            System.out.println("Client side connection -- SearchServer");
             try {
                 socket = new Socket("localhost", 30000);
 
-                dataOut = new DataOutputStream(socket.getOutputStream());
-                objectDataOut = new ObjectOutputStream(dataOut);
-
                 dataIn = new DataInputStream(socket.getInputStream());
+                dataOut = new DataOutputStream(socket.getOutputStream());
+
+                objectDataOut = new ObjectOutputStream(dataOut);
                 objectDataIn = new ObjectInputStream(dataIn);
 
                 //playerID = dataIn.readInt();

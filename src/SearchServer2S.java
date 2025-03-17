@@ -29,28 +29,8 @@ public class SearchServer2S {
     public SearchServer2S() {
         System.out.println("--search server--");
         numPlayers = 0;
-        turnsMade = 0;
-        maxTurns = 90;
 
-        server2dChar = new char[3][3];
-
-        Socket stubSocket = null;
-
-
-       /* ServerSideConnection stubSsc = new ServerSideConnection( stubSocket, numPlayers);
-        playerDataArrayList = new ArrayList<>();
-        playerDataArrayList.add(new SscPlayerData(new PlayerData(0, "stub", 0), stubSsc).getPlayerData());
-*/
         portNumIncrement = 0;
-
-
-        //
-        /*for (int i = 0; i < server2dChar.length; i++) {
-            for (int j = 0; j < server2dChar[i].length; j++) {
-                server2dChar[i][j] = ' ';
-            }
-        }*/
-
 
         try{
             ss = new ServerSocket(30000);
@@ -142,12 +122,13 @@ public class SearchServer2S {
             playerID = id;
 
             try {
-
-                dataOut = new DataOutputStream(socket.getOutputStream());
-                dataOutObj = new ObjectOutputStream(dataOut);
-
                 dataIn = new DataInputStream(socket.getInputStream());
+                dataOut = new DataOutputStream(socket.getOutputStream());
+
+                dataOutObj = new ObjectOutputStream(dataOut);
                 dataInObj = new ObjectInputStream(dataIn);
+
+                System.out.println("Connected to Game Server on port: " + s.getPort());
 
             } catch (IOException e) {
                 System.out.println("IOException from game server constructor: ServerSideConnection");
