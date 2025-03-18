@@ -271,6 +271,7 @@ public class Player2ST extends Application {
             //checkWinner();
         } else {
             // Otherwise wait for the opponent
+
             new Thread(this::updateTurn).start();
         }
     }
@@ -339,6 +340,7 @@ public class Player2ST extends Application {
      * Wait for the opponent's move
      */
     public void updateTurn() {
+
         String n = cscGS.receiveButtonNum();
         message.setText("Your opponent clicked #" + n + ", now your turn");
         textGridMessage.setText(server2dCharToString());
@@ -436,6 +438,7 @@ public class Player2ST extends Application {
             String str = "N"; // placeholder
             try {
                 // read one char for the button number
+
                 str = String.valueOf(dataIn.readChar());
                 System.out.println("player #" + otherPlayerID + " clicked button #" + str);
 

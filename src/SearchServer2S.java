@@ -228,8 +228,14 @@ public class SearchServer2S {
                     e.printStackTrace();
                 }
                 //End of chatGTP
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
 
                 player1.getSsc().sendserverPortNumber(portNumber);
+
                 player2.getSsc().sendserverPortNumber(portNumber);
                 System.out.println( "sent them port num: " + portNumber);
                 //System.exit(0);
