@@ -1,37 +1,64 @@
-import oneServerImplementation.GameServerT;
-
 import java.io.Serializable;
+import java.util.HashMap;
 
 
 public class PlayerData implements Serializable{
     private static final long serialVersionUID = 1L;
     private int userId;
     private String username;
-    private int elo;
+    private int tictactoeElo;
+    private int chessElo;
+    private int checkerElo;
+    private int connect4Elo;
+    private int[] arrayGameElos;
+    private HashMap<String, Integer> playerElos;
+    private String gameModeInterested;
 
-
-    public PlayerData(int userId, String username, int elo) {
+    public PlayerData(int userId, String username, String gameModeInterested) {
         this.userId = userId;
         this.username = username;
-        this.elo = elo;
+        this.playerElos = new HashMap<>();
+        this.playerElos.put("Chess", 20);
+        this.playerElos.put("Checker", 20);
+        this.playerElos.put("Connect4", 20);
+        this.playerElos.put("TicTacToe", 20);
 
+        this.gameModeInterested = gameModeInterested;
     }
     public int getUserId() {return userId;}
+    public void setUserId(int userId) {this.userId = userId;}
 
     public String getUsername() {return username;}
-
-    public int getElo() {return elo;}
-
-    public void setElo(int elo) { this.elo = elo; }
-
     public void setUsername(String username) {this.username = username;}
 
-    public void setUserId(int userId) {this.userId = userId;}
+    public HashMap<String, Integer> getAllPlayerElos() {
+        return playerElos;
+    }
+
+    public int getAPlayerElo(String gameMode) {
+        return playerElos.get(gameMode);
+    }
+
+    public void setAPlayerElo(String gameMode, int change) {
+        if(playerElos.get(gameMode) != null) {
+            this.playerElos.put(gameMode, change);
+        }
+    }
+
+    public void setArrayGameElos(int i, int change) {
+        this.arrayGameElos[i] += change; // update the value at index i
+    }
+
+    public String getGameModeInterested() {return gameModeInterested;}
+    public void setGameModeInterested(String gameMode) {this.gameModeInterested = gameMode;}
 
     public void printPlayerData() {
         System.out.print("PlayerData = ");
         System.out.print("[Username: " + username);
-        System.out.print(", ELO: " + elo);
+        System.out.print(", ChessELO: " + arrayGameElos[0]);
+        System.out.print(", checkerElo: " + arrayGameElos[1]);
+        System.out.print(", connect4Elo: " + arrayGameElos[2]);
+        System.out.print(", tictactoeElo: " + arrayGameElos[3]);
         System.out.println(", userId: " + userId + "]");
     }
 }

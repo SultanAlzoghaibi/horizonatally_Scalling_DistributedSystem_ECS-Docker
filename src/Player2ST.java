@@ -18,6 +18,7 @@ import java.io.*;
 
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Random;
 
 // ✅ Step 1: Confirm PlayerData Object is Created on Player2ST
@@ -39,7 +40,7 @@ import java.util.Random;
 public class Player2ST extends Application {
 
     private static final int SHIFT_AMOUNT = 100;
-    private int width = 200, height = 600;
+    private int width = 200, height = 400;
 
     private TextArea message, textGridMessage, testText;
     private Button startb00;
@@ -77,16 +78,15 @@ public class Player2ST extends Application {
             char randomChar = (char) ('A' + rand.nextInt(26)); // Random letter from A-Z
             username.append(randomChar);
         }
+
+
+
         PlayerData playerData = new PlayerData(
                 rand.nextInt(100),
                 username.toString(),
-                rand.nextInt(100));
 
-        // Generate random Elo rating (0-99)
-        playerData.setElo(rand.nextInt(100));
-        playerData.setUsername(username.toString());
-        playerData.setUserId(rand.nextInt(100));
 
+        );
         playerData.printPlayerData();
         return playerData;
     }

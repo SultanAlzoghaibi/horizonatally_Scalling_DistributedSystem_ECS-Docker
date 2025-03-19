@@ -79,9 +79,9 @@ public class SearchServer2S {
             System.out.print("PlayerData: ");
             System.out.print("User ID: " + playerData.getUserId() + ", ");
             System.out.print("Username: " + playerData.getUsername() + ", ");
-            System.out.print("ELO: " + playerData.getElo() + " | ");
+            playerData.printPlayerData();
 
-            System.out.print("Connection: ");
+            System.out.print(" || Connection: ");
             System.out.print("Player ID: " + ssc.getPlayerID() + ", ");
             System.out.println("Socket: " + ssc.getSocketPort());
         }
@@ -163,7 +163,7 @@ public class SearchServer2S {
 
                         } catch (Exception e) {
                             System.out.println("ClassNotFoundException: " + e.getMessage());
-                            break; // 🔴 Break the loop if an error occurs to avoid spamming
+                            break; //  Break the loop if an error occurs to avoid spamming
                         }
                     } else {
                         Thread.sleep(100); // if no data run a timer effectly creating a
@@ -173,7 +173,7 @@ public class SearchServer2S {
             } catch (IOException | InterruptedException e) {
                 System.out.println("IOException from run() : ServerSideConnection " + e.getMessage());
             } finally {
-                closeConnection(); // 🔴 Ensure the socket is closed properly
+                closeConnection(); //  Ensure the socket is closed properly
             }
         }
 
