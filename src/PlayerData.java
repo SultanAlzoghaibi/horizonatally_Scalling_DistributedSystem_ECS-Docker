@@ -6,11 +6,6 @@ public class PlayerData implements Serializable{
     private static final long serialVersionUID = 1L;
     private int userId;
     private String username;
-    private int tictactoeElo;
-    private int chessElo;
-    private int checkerElo;
-    private int connect4Elo;
-    private int[] arrayGameElos;
     private HashMap<String, Integer> playerElos;
     private String gameModeInterested;
 
@@ -45,21 +40,17 @@ public class PlayerData implements Serializable{
         }
     }
 
-    public void setArrayGameElos(int i, int change) {
-        this.arrayGameElos[i] += change; // update the value at index i
-    }
-
     public String getGameModeInterested() {return gameModeInterested;}
     public void setGameModeInterested(String gameMode) {this.gameModeInterested = gameMode;}
 
     public void printPlayerData() {
         System.out.print("PlayerData = ");
         System.out.print("[Username: " + username);
-        System.out.print(", ChessELO: " + arrayGameElos[0]);
-        System.out.print(", checkerElo: " + arrayGameElos[1]);
-        System.out.print(", connect4Elo: " + arrayGameElos[2]);
-        System.out.print(", tictactoeElo: " + arrayGameElos[3]);
-        System.out.println(", userId: " + userId + "]");
+        System.out.print(", ChessELO: " + playerElos.get("Chess"));
+        System.out.print(", checkerElo: " + playerElos.get("Checker"));
+        System.out.print(", connect4Elo: " + playerElos.get("Connect4"));
+        System.out.print(", tictactoeElo: " + playerElos.get("TicTacToe"));
+        System.out.println(", gameModeInterested: " + gameModeInterested + "]");
     }
 }
 
