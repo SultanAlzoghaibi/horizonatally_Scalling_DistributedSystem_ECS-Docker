@@ -84,8 +84,7 @@ public class Player2ST extends Application {
         PlayerData playerData = new PlayerData(
                 rand.nextInt(100),
                 username.toString(),
-
-
+                "chess"
         );
         playerData.printPlayerData();
         return playerData;
@@ -245,6 +244,7 @@ public class Player2ST extends Application {
      */
     private void hnadleB00Click(){
         if (cscSS != null) {
+            playerData.printPlayerData();
             cscSS.sendPlayerData(playerData);
         }
 
