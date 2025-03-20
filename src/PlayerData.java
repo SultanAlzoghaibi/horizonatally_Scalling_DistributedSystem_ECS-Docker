@@ -30,6 +30,10 @@ public class PlayerData implements Serializable{
         return playerElos;
     }
 
+    public String getAllPlayerElosString() {
+       return playerElos.toString();
+    }
+
     public int getAPlayerElo(String gameMode) {
         return playerElos.get(gameMode);
     }

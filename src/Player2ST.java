@@ -6,19 +6,14 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import javax.xml.transform.Source;
 import java.io.*;
 
 import java.net.Socket;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Random;
 
 // ✅ Step 1: Confirm PlayerData Object is Created on Player2ST
@@ -44,6 +39,11 @@ public class Player2ST extends Application {
 
     private TextArea message, textGridMessage, testText;
     private Button startb00;
+    private Button startChess;
+    private Button startCheckers;
+    private Button startTictactoe;
+    private Button startConnect4;
+
     private Button b01, b02, b03, b04, b05, b06, b07, b08, b09;
 
     private CscToSearchServer cscSS;
@@ -121,16 +121,51 @@ public class Player2ST extends Application {
 
 
         // "Start Game" button
-        startb00 = new Button("Start Matchmaking");
-        startb00.setOnAction(e -> {
+        //startb00 = new Button("Start Matchmaking");
+        startChess = new Button("Start Chess");
+        startCheckers = new Button("Start Checkers");
+        startTictactoe = new Button("Start Tictactoe");
+        startConnect4 = new Button("Start Connect4");
+
+        startChess.setOnAction(e -> {
+            System.out.println("YOU PRESSED CHESS");
+            playerData.setGameModeInterested("chess");
+            matchmakingButtonPressed();
+        });
+        startCheckers.setOnAction(e -> {
+            System.out.println("YOU PRESSED CHECKERS");
+            playerData.setGameModeInterested("checkers");
+            matchmakingButtonPressed();
+        });
+
+        startTictactoe.setOnAction(e -> {
+            System.out.println("YOU PRESSED TICTACTOE");
+            playerData.setGameModeInterested("tictactoe");
+            matchmakingButtonPressed();
+        });
+        startConnect4.setOnAction(e -> {
+            System.out.println("YOU PRESSED CONNECT4");
+            playerData.setGameModeInterested("connect4");
+            matchmakingButtonPressed();
+        });
+
+        menuLayout.getChildren().addAll(startChess, startCheckers, startTictactoe, startConnect4, testText);
+
+
+
+
+
+        /*startb00.setOnAction(e -> {
             System.out.println("YOU PRESSED THE BUTTON");
 
             connectToSearchServer();   // Connect to the server
             hnadleB00Click();
             setUpLoadingScreen(primaryStage);
-        });
+        });*/
 
-        menuLayout.getChildren().addAll(startb00, testText);
+
+
+        //menuLayout.getChildren().addAll(startChess, testText);
 
         Scene menuScene = new Scene(menuLayout, width, height);
         primaryStage.setScene(menuScene);
@@ -147,6 +182,11 @@ public class Player2ST extends Application {
 
         primaryStage.show();
         // end of CHAT GTP
+    }
+    public void matchmakingButtonPressed(){
+        connectToSearchServer();   // Connect to the server
+        hnadleB00Click();
+        setUpLoadingScreen(primaryStage);
     }
 
     private void setUpLoadingScreen(Stage primaryStage) {

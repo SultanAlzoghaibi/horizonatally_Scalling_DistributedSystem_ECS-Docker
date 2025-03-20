@@ -3,6 +3,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -41,7 +42,9 @@ public class SearchServer2S {
         gameQueues.put("chess", new ArrayList<SscPlayerData>() );
         gameQueues.put("connect4", new ArrayList<SscPlayerData>() );
         gameQueues.put("tictactoe", new ArrayList<SscPlayerData>() );
-        gameQueues.put("chekers", new ArrayList<SscPlayerData>() );
+        gameQueues.put("checkers", new ArrayList<SscPlayerData>() );
+
+        System.out.println("gameQueues:" + gameQueues.toString());
 
         try{
             ss = new ServerSocket(30000);
@@ -125,22 +128,25 @@ public class SearchServer2S {
 
     public void startMatchMakingThreads(){
         scheduler.scheduleAtFixedRate(() -> {
-            //System.out.println("Tick - matchmaking check");
-            for(String gameModes : gameQueues.keySet()){
-                Thread t = new Thread(() -> {
-                    try {
-                        //System.out.println(gameModes + ": sscPlayerDataArrayList.size() = " + sscPlayerDataArrayList.size());
-                        Thread.sleep(10);
-                        ArrayList<SscPlayerData> sscPDArraylist = gameQueues.get(gameModes);
-                        gameModeMatchMakingToElo(sscPDArraylist); // Remmeber Arraylist are MUTABLE in java
-                        //matchMakingToElo();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                });
-                t.start();
+            System.out.println("Tick - -------------------");
+            synchronized (gameQueues) {
+
+                for (String gameModes : gameQueues.keySet()) {
+                    Thread t = new Thread(() -> {
+                        try {
+                            System.out.println(gameModes + ": sscPlayerDataArrayList.size() = " + gameQueues.get(gameModes).size());
+                            Thread.sleep(10);
+                            ArrayList<SscPlayerData> sscPDArraylist = gameQueues.get(gameModes);
+                            gameModeMatchMakingToElo(sscPDArraylist); // Remmeber Arraylist are MUTABLE in java
+                            //matchMakingToElo();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                    t.start();
                 }
-            }, 0, 1, TimeUnit.SECONDS);
+            }
+            }, 0, 5, TimeUnit.SECONDS);
         };
 
 
@@ -148,40 +154,44 @@ public class SearchServer2S {
 
         if(sscPDArraylist.size() >= 2){
             System.out.println("sscPlayerDataArrayList >= 2");
-            SscPlayerData player1 = sscPDArraylist.removeFirst();
-            SscPlayerData player2 = sscPDArraylist.removeFirst();
-            portNumIncrement++;
-            //portNumIncrement = 1;
-            int portNumber = 30000 + portNumIncrement;
-            String strPortNumber = Integer.toString(portNumber);
-
-            //ASKED chatGTP fro porces builder file path ans
-            ProcessBuilder pb = new ProcessBuilder(
-                    "java",
-                    "-cp",
-                    "/Users/sultan/Desktop/seng-300/JavaWebSockets/out/production/JavaWebSockets",
-                    "GameServer2ST",
-                    strPortNumber
-            );
+            synchronized (sscPDArraylist) {
+                SscPlayerData player1 = sscPDArraylist.removeFirst();
+                SscPlayerData player2 = sscPDArraylist.removeFirst();
 
 
-            try {
-                Process process = pb.start(); // storing the process but might not use tho.
-                System.out.println("Launched GameServer2ST on port: " + strPortNumber);
-            } catch (IOException e) {
-                e.printStackTrace();
+                portNumIncrement++;
+                //portNumIncrement = 1;
+                int portNumber = 30000 + portNumIncrement;
+                String strPortNumber = Integer.toString(portNumber);
+
+                //ASKED chatGTP fro porces builder file path ans
+                ProcessBuilder pb = new ProcessBuilder(
+                        "java",
+                        "-cp",
+                        "/Users/sultan/Desktop/seng-300/JavaWebSockets/out/production/JavaWebSockets",
+                        "GameServer2ST",
+                        strPortNumber
+                );
+
+
+                try {
+                    Process process = pb.start(); // storing the process but might not use tho.
+                    System.out.println("Launched GameServer2ST on port: " + strPortNumber);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //End of chatGTP
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                player1.getSsc().sendserverPortNumber(portNumber);
+                player2.getSsc().sendserverPortNumber(portNumber);
+                System.out.println("sent them port num: " + portNumber);
+                //System.exit(0);
             }
-            //End of chatGTP
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            player1.getSsc().sendserverPortNumber(portNumber);
-            player2.getSsc().sendserverPortNumber(portNumber);
-            System.out.println( "sent them port num: " + portNumber);
-            //System.exit(0);
         }
 
     }
@@ -208,7 +218,7 @@ public class SearchServer2S {
                 dataOutObj = new ObjectOutputStream(dataOut);
                 dataInObj = new ObjectInputStream(dataIn);
 
-                System.out.println("Connected to Game Server on port: " + s.getPort());
+                System.out.println("Connected to Search Server on port: " + s.getPort());
 
             } catch (IOException e) {
                 System.out.println("IOException from game server constructor: ServerSideConnection");
@@ -216,7 +226,7 @@ public class SearchServer2S {
         }
         public void run() {
             try {
-                while (true) {
+
                     if (dataIn.available() > 0) {
                         try {
                             // ISSUE, 1 thread per person can be inefeiccient
@@ -227,16 +237,23 @@ public class SearchServer2S {
                             SscPlayerData tempsscPlayerData = new SscPlayerData(tempPlayerData, this);
 
                             tempsscPlayerData.printConnectionDetails();
+                            System.out.println("gameQueues:" + gameQueues.toString());
+
 
                             // checkin which hashmaps SscPlayerDataArraylist to add to
                             for(String gameModes : gameQueues.keySet()){
-                                    if(tempsscPlayerData.playerData.getGameModeInterested() == gameModes){
-                                        gameQueues.get(gameModes).add(tempsscPlayerData);
+                                    if(Objects.equals(tempsscPlayerData.playerData.getGameModeInterested(), gameModes)){
+                                        synchronized (gameQueues.get(gameModes)) {
+                                            gameQueues.get(gameModes).add(tempsscPlayerData);
+                                        }
+
                                         break;
                                     }
                                 }
 
-                            System.out.println(" The sscPlayerDataArrayList: ");
+                            System.out.println("After GameQueues: ");
+                            System.out.println(gameQueues.toString());
+
 
 
                             /*for(String gameModes : gameQueues.keySet()){
@@ -258,13 +275,13 @@ public class SearchServer2S {
 
                         } catch (Exception e) {
                             System.out.println("ClassNotFoundException: " + e.getMessage());
-                            break; //  Break the loop if an error occurs to avoid spamming
+                            ; //  Break the loop if an error occurs to avoid spamming
                         }
                     } else {
                         Thread.sleep(100); // if no data run a timer effectly creating a
                         // 1 sec tick rate and no null erros one a handshake deal had been made
                     }
-                }
+
             } catch (IOException | InterruptedException e) {
                 System.out.println("IOException from run() : ServerSideConnection " + e.getMessage());
             } finally {
@@ -295,15 +312,31 @@ public class SearchServer2S {
             }
         }
 
-        public void printGameQueues(){
+        public void printGameQueues() {
             for (String gameQueue : gameQueues.keySet()) {
-                System.out.println("{" + gameQueue + ": ");
-                for (SscPlayerData sscPlayerData : gameQueues.get(gameQueue)) {
-                    sscPlayerData.printConnectionDetails();
+                System.out.print("{" + gameQueue + ": [");
+
+                ArrayList<SscPlayerData> playerList = gameQueues.get(gameQueue);
+                for (int i = 0; i < playerList.size(); i++) {
+
+                    SscPlayerData sscPlayerData = playerList.get(i);
+                    PlayerData playerData = sscPlayerData.getPlayerData();
+
+                    // Example formatting: (socket:30000, id:1000, username:AWS, elos:[23, 535, 35, 53])
+                    System.out.print("(socket:" + sscPlayerData.getSsc().getSocketPort() +
+                            ", id:" + playerData.getUserId() +
+                            ", username:" + playerData.getUsername() +
+                            ", elos:" + playerData.getAllPlayerElosString() +
+                            "gameMode:" + playerData.getGameModeInterested() +")");
+
+
+                    // Add comma between players
+                    if (i != playerList.size() - 1) {
+                        System.out.print(", ");
+                    }
                 }
-
+                System.out.println("]}");
             }
-
         }
 
 
@@ -355,6 +388,7 @@ public class SearchServer2S {
                 dataOut.writeInt(portNum);
                 dataOut.flush();
             } catch (Exception e) {
+                e.printStackTrace();
                 System.out.println("Exception in sendserverPortNumber");
             }
 
