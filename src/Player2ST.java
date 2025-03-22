@@ -60,6 +60,7 @@ public class Player2ST extends Application {
     private boolean gameIsActive;
     private int gameServerPort;
     private Stage primaryStage;
+    private String gameMode;
 
     PlayerData playerData;
 
@@ -105,6 +106,7 @@ public class Player2ST extends Application {
         enemyPoints = 0;
         gameIsActive = false;
         buttonsEnabled = false;
+        gameMode = "na";
 
         VBox menuLayout = new VBox();
         menuLayout.setAlignment(Pos.CENTER);
@@ -213,7 +215,7 @@ public class Player2ST extends Application {
     private void setUpGameScene(Stage primaryStage) {
         // CHAT GTP TRANSLTED THIS FROM SWING TO JAVAFX
         gameIsActive = true;
-        primaryStage.setTitle("The Game for Player #" + playerID);
+        primaryStage.setTitle(gameMode + " for Player #" + playerID);
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
         root.setAlignment(Pos.CENTER);
@@ -454,6 +456,8 @@ public class Player2ST extends Application {
                 maxTurns = dataIn.readInt() / 2;
                 System.out.println("maxTurns = " + maxTurns);
 
+                String gameMode = dataIn.readUTF();
+
                 // Read the 3x3 char array from the server
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
@@ -533,7 +537,6 @@ public class Player2ST extends Application {
                 // Values to send over the network
                 //maxTurns = dataIn.readInt() / 2;
                 //System.out.println("maxTurns = " + maxTurns);
-
 
                 waitForGameServerPortThread();
 
