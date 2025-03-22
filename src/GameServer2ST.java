@@ -32,7 +32,6 @@ public class GameServer2ST {
         maxTurns = 90;
         values = new int[4];
         server2dChar = new char[3][3];
-        gameMode = "na";
 
         for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
             values[i] = i;
@@ -125,6 +124,7 @@ public class GameServer2ST {
                 dataOut.writeInt(playerID);
                 dataOut.writeInt(maxTurns);
                 dataOut.writeUTF(gameMode);
+                dataOut.flush();
 
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {

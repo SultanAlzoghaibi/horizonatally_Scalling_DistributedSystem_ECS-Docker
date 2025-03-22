@@ -456,7 +456,8 @@ public class Player2ST extends Application {
                 maxTurns = dataIn.readInt() / 2;
                 System.out.println("maxTurns = " + maxTurns);
 
-                String gameMode = dataIn.readUTF();
+                gameMode = dataIn.readUTF();
+                System.out.println(gameMode);
 
                 // Read the 3x3 char array from the server
                 for (int i = 0; i < 3; i++) {
