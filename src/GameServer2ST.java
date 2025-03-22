@@ -16,6 +16,7 @@ public class GameServer2ST {
     private int[] values;
     private char[][] server2dChar;
     private static int portNumber;
+    static String gameMode;
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
@@ -31,6 +32,7 @@ public class GameServer2ST {
         maxTurns = 90;
         values = new int[4];
         server2dChar = new char[3][3];
+        gameMode = "na";
 
         for (int i = 0; i < 4; i++) { //Ading the values fromt he server not
             values[i] = i;
@@ -83,7 +85,7 @@ public class GameServer2ST {
             while (numPlayers < 2) {
                 Socket s = ss.accept();
                 numPlayers++;
-                System.out.println("webSocketNotes.Player #" + numPlayers + " has joined the game");
+                System.out.println("Player #" + numPlayers + " has joined the game");
                 ServerSideConnection ssc = new ServerSideConnection(s, numPlayers);
                 if (numPlayers == 1) {
                     player1 = ssc;
@@ -122,6 +124,7 @@ public class GameServer2ST {
             try {
                 dataOut.writeInt(playerID);
                 dataOut.writeInt(maxTurns);
+                dataOut.writeUTF(gameMode);
 
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
@@ -245,8 +248,9 @@ public class GameServer2ST {
         System.out.println(Arrays.toString(args));  // Print arguments for debugging
 
         int portNumber;
-        if (args.length == 1) {
+        if (args.length >= 2) {
             portNumber = Integer.parseInt(args[0]);
+            gameMode = args[1];
         } else {
             System.out.println("Port number required as an argument.");
             return;  // Exit early if no port is provided
