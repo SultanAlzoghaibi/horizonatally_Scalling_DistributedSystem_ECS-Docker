@@ -248,17 +248,17 @@ public class GameServer2ST {
         System.out.println(Arrays.toString(args));  // Print arguments for debugging
 
         int portNumber;
-        if (args.length >= 2) {
+        if (args.length == 2) {
             portNumber = Integer.parseInt(args[0]);
             gameMode = args[1];
         } else {
-            System.out.println("Port number required as an argument.");
-            return;  // Exit early if no port is provided
+            System.out.println("need 2 arguments to pass");
+            return;
         }
 
         GameServer2ST gs = new GameServer2ST(portNumber);
 
-        // From CAHTGTP Add shutdown hook to close the socket when stopping the program
+        // From CHATGTP Add shutdown hook to close the socket when stopping the program
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutdown detected. Closing server socket...");
             gs.closeServer();

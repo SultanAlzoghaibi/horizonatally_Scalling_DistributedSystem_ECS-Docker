@@ -1,0 +1,9 @@
+FROM openjdk:23
+WORKDIR /app
+COPY . /app
+EXPOSE 30001
+EXPOSE 30002
+EXPOSE 30003
+EXPOSE 30004
+EXPOSE 30005
+CMD ["java", "GameServer2ST", "30001", "chess"]
