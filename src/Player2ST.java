@@ -501,14 +501,12 @@ public class Player2ST extends Application {
         }
         public void closeConnection() {
             try {
-                Thread.sleep(20000);
                 socket.close();
                 System.out.println("Closing connection");
             } catch (IOException e) {
                 System.out.println("IO exception in ClientSideConnection closeConnection");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
             }
+
         }
 
         public Socket getSocket() {

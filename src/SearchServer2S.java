@@ -231,7 +231,7 @@ public class SearchServer2S {
                 String strPortNumber = Integer.toString(portNumber);
 
                 //ASKED chatGTP fro porces builder file path ans
-                ProcessBuilder pb = new ProcessBuilder(
+                /*ProcessBuilder pb = new ProcessBuilder(
                         "java",
                         "-cp",
                         "/Users/sultan/Desktop/seng-300/JavaWebSockets/out/production/JavaWebSockets",
@@ -245,7 +245,7 @@ public class SearchServer2S {
                     System.out.println("Launched GameServer2ST on port: " + strPortNumber);
                 } catch (IOException e) {
                     e.printStackTrace();
-                }
+                }*/
                 //End of chatGTP
                 try {
                     Thread.sleep(100);
