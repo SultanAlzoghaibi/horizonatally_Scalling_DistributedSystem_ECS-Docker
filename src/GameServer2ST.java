@@ -51,11 +51,8 @@ public class GameServer2ST {
             System.out.println();
         }
 
-
-
-
         try{
-            ss = new ServerSocket(portNumber);
+            ss = new ServerSocket(30001);
         } catch(IOException e){
             System.out.println("IOException from game server constructor");
             e.printStackTrace();

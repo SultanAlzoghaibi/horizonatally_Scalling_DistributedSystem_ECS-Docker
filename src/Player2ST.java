@@ -525,7 +525,7 @@ public class Player2ST extends Application {
         public CscToSearchServer() {
             System.out.println("Client side connection -- SearchServer");
             try {
-                socket = new Socket("localhost", 30000);
+                Socket socket = new Socket("3.236.119.19", 30000);
 
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
