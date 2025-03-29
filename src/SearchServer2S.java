@@ -9,6 +9,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+// AWS
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.services.ecs.EcsClient;
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.*;
+import software.amazon.awssdk.services.ecs.model.*;
+
+import software.amazon.awssdk.services.ecs.model.*;
+import software.amazon.awssdk.services.ecs.model.*;
+// EC2 SDK (to get public IP from ENI)
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.*;
+
+// AWS region
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ecs.EcsClient;
+
 
 public class SearchServer2S {
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
@@ -218,34 +235,22 @@ public class SearchServer2S {
                 //closeConnection(); //  Ensure the socket is closed properly
             }
         }
+
         public void gameModeMatchMakingToElo(String gameMode){
             ArrayList<SscPlayerData> sscPDArraylist = gameQueues.get(gameMode);
             if(sscPDArraylist.size() >= 2){
                 System.out.println("sscPlayerDataArrayList >= 2");
                 SscPlayerData player1 = sscPDArraylist.removeFirst();
                 SscPlayerData player2 = sscPDArraylist.removeFirst();
-
                 portNumIncrement++;
                 //portNumIncrement = 1;
                 int portNumber = 30000 + portNumIncrement;
                 String strPortNumber = Integer.toString(portNumber);
 
-                //ASKED chatGTP fro porces builder file path ans
-                /*ProcessBuilder pb = new ProcessBuilder(
-                        "java",
-                        "-cp",
-                        "/Users/sultan/Desktop/seng-300/JavaWebSockets/out/production/JavaWebSockets",
-                        "GameServer2ST",
-                        strPortNumber,
-                        gameMode
-                );
+                // FROM CHATGTP ON HOW TO DO ECS API CALS
+                System.out.println("IP ADRESS");
+                String ipAdress = launchGameServerOnECS(gameMode);
 
-                try {
-                    Process process = pb.start(); // storing the process but might not use tho.
-                    System.out.println("Launched GameServer2ST on port: " + strPortNumber);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }*/
                 //End of chatGTP
                 try {
                     Thread.sleep(100);
@@ -260,6 +265,56 @@ public class SearchServer2S {
 
 
         }
+        // i ASK CHATGTP AS im not familar with the aws and
+        // AWS SDK Java API docs i svery big and tentious when I tried.
+        public String launchGameServerOnECS(String gameMode) {
+            try {
+                EcsClient ecsClient = EcsClient.create();
+
+                AwsVpcConfiguration vpcConfig = AwsVpcConfiguration.builder()
+                        .subnets("subnet-0a3c6f71109e9e394")
+                        .securityGroups("sg-08e5d65f17952b574")
+                        .assignPublicIp(AssignPublicIp.ENABLED)
+                        .build();
+
+                NetworkConfiguration networkConfig = NetworkConfiguration.builder()
+                        .awsvpcConfiguration(vpcConfig)
+                        .build();
+
+                ContainerOverride override = ContainerOverride.builder()
+                        .name("gameserver-container")
+                        .command(gameMode)
+                        .build();
+
+                TaskOverride taskOverride = TaskOverride.builder()
+                        .containerOverrides(override)
+                        .build();
+
+                RunTaskRequest request = RunTaskRequest.builder()
+                        .cluster("h-scalling")
+                        .launchType(LaunchType.FARGATE)
+                        .taskDefinition("gameserver-task")
+                        .networkConfiguration(networkConfig)
+                        .overrides(taskOverride)
+                        .build();
+
+                RunTaskResponse response = ecsClient.runTask(request);
+
+                if (!response.failures().isEmpty()) {
+                    System.out.println("🚨 Failed to run ECS task: " + response.failures());
+                    return null;
+                }
+
+                String taskArn = response.tasks().get(0).taskArn();
+                System.out.println("✅ GameServer task launched: " + taskArn);
+                return taskArn;
+
+            }  catch (EcsException e) {
+                System.out.println("❌ AWS ECS Error: ");
+            }
+            return null;
+        }
+
 
         public void matchMakingToElo(){
 
@@ -342,7 +397,15 @@ public class SearchServer2S {
                 e.printStackTrace();
                 System.out.println("Exception in sendserverPortNumber");
             }
+        }
+        public void sendIPAddress(String ip){
 
+            try {
+                dataOut.writeUTF(ip);
+                dataOut.flush();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         private int getPlayerID(){

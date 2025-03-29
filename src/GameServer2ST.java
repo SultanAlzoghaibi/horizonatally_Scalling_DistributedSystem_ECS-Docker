@@ -244,10 +244,8 @@ public class GameServer2ST {
     public static void main(String[] args) {
         System.out.println(Arrays.toString(args));  // Print arguments for debugging
 
-        int portNumber;
-        if (args.length == 2) {
-            portNumber = Integer.parseInt(args[0]);
-            gameMode = args[1];
+        if (args.length == 1) {
+            gameMode = args[0];
         } else {
             System.out.println("need 2 arguments to pass");
             return;

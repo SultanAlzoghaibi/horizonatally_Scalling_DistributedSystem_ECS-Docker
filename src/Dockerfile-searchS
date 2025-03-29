@@ -1,6 +1,11 @@
 FROM openjdk:23
-WORKDIR /app/src
-COPY ./src/ .
+WORKDIR /app
+
+COPY ./src/ ./src/
+
+COPY ./libs/attempt2/*.jar ./libs/
+
+RUN mkdir build && javac -cp "libs/*" -d build src/PlayerData.java src/SearchServer2S.java
+
 EXPOSE 30000
-RUN mkdir build && javac -d build PlayerData.java SearchServer2S.java
-CMD ["java", "-cp", "build", "SearchServer2S"]
+CMD ["java", "-cp", "build:libs/*", "SearchServer2S"]

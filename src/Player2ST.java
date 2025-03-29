@@ -14,6 +14,7 @@ import java.io.*;
 
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 // ✅ Step 1: Confirm PlayerData Object is Created on Player2ST
@@ -59,6 +60,7 @@ public class Player2ST extends Application {
     private boolean buttonsEnabled;
     private boolean gameIsActive;
     private int gameServerPort;
+    private String gameServerIP;
     private Stage primaryStage;
     private String gameMode;
 
@@ -107,6 +109,7 @@ public class Player2ST extends Application {
         gameIsActive = false;
         buttonsEnabled = false;
         gameMode = "na";
+        gameServerIP = "na";
 
         VBox menuLayout = new VBox();
         menuLayout.setAlignment(Pos.CENTER);
@@ -442,9 +445,9 @@ public class Player2ST extends Application {
         private DataInputStream dataIn;
         private DataOutputStream dataOut;
         public CscToGameServer() {
-            System.out.println("Client side connection -- GameServerr");
+            System.out.println("Client side connection -- GameServer");
             try {
-                socket = new Socket("localhost", gameServerPort);
+                socket = new Socket(gameServerIP, 30001);
 
                 dataOut = new DataOutputStream(socket.getOutputStream());
                 dataIn = new DataInputStream(socket.getInputStream());
@@ -465,10 +468,10 @@ public class Player2ST extends Application {
                         server2dChar[i][j] = dataIn.readChar();
                     }
                 }
-
             } catch (IOException e) {
                 System.out.println("IO exception from CSC constructor");
             }
+
         }
         public void sendButtonNum(String strBNum) {
             try {
@@ -533,15 +536,8 @@ public class Player2ST extends Application {
                 objectDataOut = new ObjectOutputStream(dataOut);
                 objectDataIn = new ObjectInputStream(dataIn);
 
-                //playerID = dataIn.readInt();
-                //System.out.println("Player ID: " + playerID);
-
-                // Values to send over the network
-                //maxTurns = dataIn.readInt() / 2;
-                //System.out.println("maxTurns = " + maxTurns);
-
-                waitForGameServerPortThread();
-
+                //waitForGameServerPortThread();
+                waitForGameServerIPThread();
 
             } catch (IOException e) {
                 System.out.println("IO exception from CSC constructor");
@@ -559,6 +555,33 @@ public class Player2ST extends Application {
             } catch (NullPointerException e) {
                 System.out.println("NullPointerException in ClientSideConnection sendPlayerData: " + e.getMessage());
             }
+        }
+
+        private void waitForGameServerIPThread() {
+            Thread portReceiver = new Thread(() -> {
+                try {
+                    // Block and wait until the port number arrives:
+                    gameServerIP = dataIn.readUTF();
+                    System.out.println("Received GameServer IP Address: " + gameServerIP);
+
+                    if(!Objects.equals(gameServerIP, "na")) {
+                        closeConnection();
+                        connectToGameServer();
+
+                        // Chatgtp said u can so primary stage unless its with this
+                        // Platform.runLater javaFX special thread
+                        Platform.runLater(() -> {
+                            if (primaryStage != null) {
+                                setUpGameScene(primaryStage);
+                            }
+                        });
+                    }
+
+                } catch (IOException e) {
+                    System.out.println("Error receiving port: " + e.getMessage());
+                }
+            });
+            portReceiver.start();
         }
 
         private void waitForGameServerPortThread() {
