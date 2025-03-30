@@ -1,11 +1,14 @@
 FROM openjdk:23
 WORKDIR /app
 
+# Copy source code and libraries
 COPY ./src/ ./src/
-
 COPY ./libs/attempt2/*.jar ./libs/
 
-RUN mkdir build && javac -cp "libs/*" -d build src/PlayerData.java src/SearchServer2S.java
-
+# Compile Java source with external dependencies
+RUN mkdir build && javac -cp "libs/*" -d build src/SearchServer2S.java src/PlayerData.java
+# Expose SearchServer port
 EXPOSE 30000
-CMD ["java", "-cp", "build:libs/*", "SearchServer2S"]
+
+# Run the compiled server with classpath for both classes and JARs
+CMD ["java", "-cp", "build:libs/*:libs/attempt2/*", "SearchServer2S"]
