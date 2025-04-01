@@ -275,6 +275,105 @@ public class SearchServer2S {
         }
         // i ASK CHATGTP a bit here, AS im not familar with the aws and
         // AWS SDK Java API docs i svery big and tentious when I tried.
+        public String getPublicIpFromTaskArn(String taskArn) {
+
+            EcsClient ecsClient = EcsClient.builder()
+                    .region(Region.US_EAST_1)
+                    .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                    .build();
+
+            Ec2Client ec2Client = Ec2Client.builder()
+                    .region(Region.US_EAST_1)
+                    .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                    .build();
+
+            String eniId = null;
+
+            // Wait for ENI to be attached (max 60s)
+            long startTime = System.nanoTime();
+            System.out.print("ENI API call time: ");
+            for (int i = 0; i < 600; i++) {
+                try {
+                    DescribeTasksRequest describeRequest = DescribeTasksRequest.builder()
+                            .cluster("h-scalling")
+                            .tasks(taskArn)
+                            .build();
+
+                    DescribeTasksResponse describeResponse = ecsClient.describeTasks(describeRequest);
+
+                    List<Attachment> attachments = describeResponse.tasks().get(0).attachments();
+                    if (!attachments.isEmpty()) {
+                        eniId = attachments.stream()
+                                .filter(a -> a.type().equals("ElasticNetworkInterface"))
+                                .flatMap(a -> a.details().stream())
+                                .filter(d -> d.name().equals("networkInterfaceId"))
+                                .map(KeyValuePair::value)
+                                .findFirst()
+                                .orElse(null);
+
+                        if (eniId != null) {
+                            long endTime = System.nanoTime();
+                            double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+                            System.out.printf("%.2f", durationSeconds);
+                            System.out.println();
+                            System.out.println("🔍 ENI ID found: " + eniId);
+                            break;
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("❌ Error while fetching ENI: ");
+                }
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    System.out.println("int");
+                }
+            }
+
+            if (eniId == null) {
+                System.out.println("❌ ENI ID not found after timeout.");
+                return null;
+            }
+
+            // ✅ Now wait for public IP to be available on that ENI (max 30s)
+            System.out.print("⌛ Waiting for public IP: ");
+            startTime = System.nanoTime();
+
+            for (int i = 0; i < 300; i++) {
+                try {
+                    DescribeNetworkInterfacesResponse eniResponse = ec2Client.describeNetworkInterfaces(
+                            DescribeNetworkInterfacesRequest.builder()
+                                    .networkInterfaceIds(eniId)
+                                    .build()
+                    );
+
+                    NetworkInterfaceAssociation assoc = eniResponse.networkInterfaces().get(0).association();
+                    if (assoc != null && assoc.publicIp() != null) {
+                        String publicIp = assoc.publicIp();
+                        long endTime = System.nanoTime();
+                        double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+                        System.out.printf("%.2f", durationSeconds);
+                        System.out.println();
+
+                        System.out.println("🌐 Public IP found: " + publicIp);
+                        return publicIp;
+                    } else {
+
+                    }
+                } catch (Exception e) {
+                    System.out.println("❌ Error checking for public IP: ");
+                }
+
+                try {
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    System.out.println("int");
+                }
+            }
+
+            System.out.println("❌ Public IP not associated after timeout.");
+            return null;
+        }
 
 
         public String launchGameServerOnECS(String gameMode) {
@@ -327,14 +426,14 @@ public class SearchServer2S {
                 String taskArn = response.tasks().get(0).taskArn();
                 System.out.println("✅ GameServer task launched: " + taskArn);
 
-                // 5. Retrieve public IP using EC2
+
                 long endTime = System.nanoTime();
                 double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
                 System.out.print("launchGameServerOnECS Time: ");
                 System.out.printf("%.2f", durationSeconds);
                 System.out.println();
 
-                return (taskArn); // now handles ENI wait/retry internally
+                return getPublicIpFromTaskArn(taskArn); // now handles ENI wait/retry internally
 
             } catch (EcsException e) {
                 System.out.println("❌ AWS ECS Error: ");
