@@ -262,13 +262,14 @@ public class SearchServer2S {
                 System.out.println("🌐 Public IP of GameServer: " + ipAddress);
 
                 try {
-                    Thread.sleep(10);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                player1.getSsc().sendserverPortNumber(portNumber);
-                player2.getSsc().sendserverPortNumber(portNumber);
-                System.out.println("sent them port num: " + portNumber);
+
+                player1.getSsc().sendIPAddress(ipAddress);
+                player2.getSsc().sendIPAddress(ipAddress);
+                System.out.println("sent them ip: " + ipAddress);
                 //System.exit(0);
             }
 
