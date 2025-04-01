@@ -515,7 +515,6 @@ public class SearchServer2S {
             System.out.print("}");
         }
 
-
         public void sendserverPortNumber(int portNum){
             try{
                 dataOut.writeInt(portNum);
