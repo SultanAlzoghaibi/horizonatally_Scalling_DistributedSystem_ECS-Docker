@@ -1,25 +1,27 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 // AWS
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.services.ecs.EcsClient;
 import software.amazon.awssdk.services.ec2.Ec2Client;
 import software.amazon.awssdk.services.ec2.model.*;
 import software.amazon.awssdk.services.ecs.model.*;
 
+
+
 import software.amazon.awssdk.services.ecs.model.*;
 import software.amazon.awssdk.services.ecs.model.*;
 // EC2 SDK (to get public IP from ENI)
-import software.amazon.awssdk.services.ec2.Ec2Client;
+
+import software.amazon.awssdk.services.ec2.model.DescribeNetworkInterfacesRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeNetworkInterfacesResponse;
 import software.amazon.awssdk.services.ec2.model.*;
 
 // AWS region
@@ -247,13 +249,20 @@ public class SearchServer2S {
                 int portNumber = 30000 + portNumIncrement;
                 String strPortNumber = Integer.toString(portNumber);
 
-                // FROM CHATGTP ON HOW TO DO ECS API CALS
-                System.out.println("IP ADRESS");
-                String ipAdress = launchGameServerOnECS(gameMode);
 
-                //End of chatGTP
+                System.out.println("IP ADRESS");
+                // for deguggin later
+                long startTime = System.nanoTime();
+                String ipAddress = launchGameServerOnECS(gameMode);
+                long endTime = System.nanoTime();
+                double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+                System.out.printf("⏱️ Time to get public IP: %.2f seconds: ", durationSeconds);
+                System.out.println();
+
+                System.out.println("🌐 Public IP of GameServer: " + ipAddress);
+
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(10);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -263,14 +272,22 @@ public class SearchServer2S {
                 //System.exit(0);
             }
 
-
         }
-        // i ASK CHATGTP AS im not familar with the aws and
+        // i ASK CHATGTP a bit here, AS im not familar with the aws and
         // AWS SDK Java API docs i svery big and tentious when I tried.
+
+
         public String launchGameServerOnECS(String gameMode) {
             try {
-                EcsClient ecsClient = EcsClient.create();
+                // 1. Create ECS client
+                long startTime = System.nanoTime();
 
+                EcsClient ecsClient = EcsClient.builder()
+                        .region(Region.US_EAST_1)
+                        .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                        .build();
+
+                // 2. VPC Networking config
                 AwsVpcConfiguration vpcConfig = AwsVpcConfiguration.builder()
                         .subnets("subnet-0a3c6f71109e9e394")
                         .securityGroups("sg-08e5d65f17952b574")
@@ -281,8 +298,9 @@ public class SearchServer2S {
                         .awsvpcConfiguration(vpcConfig)
                         .build();
 
+                // 3. Container override
                 ContainerOverride override = ContainerOverride.builder()
-                        .name("gameserver-container")
+                        .name("GameServerC") // MUST match your container name in ECS
                         .command(gameMode)
                         .build();
 
@@ -290,6 +308,7 @@ public class SearchServer2S {
                         .containerOverrides(override)
                         .build();
 
+                // 4. Launch ECS task
                 RunTaskRequest request = RunTaskRequest.builder()
                         .cluster("h-scalling")
                         .launchType(LaunchType.FARGATE)
@@ -307,10 +326,19 @@ public class SearchServer2S {
 
                 String taskArn = response.tasks().get(0).taskArn();
                 System.out.println("✅ GameServer task launched: " + taskArn);
-                return taskArn;
 
-            }  catch (EcsException e) {
+                // 5. Retrieve public IP using EC2
+                long endTime = System.nanoTime();
+                double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+                System.out.print("launchGameServerOnECS Time: ");
+                System.out.printf("%.2f", durationSeconds);
+                System.out.println();
+
+                return (taskArn); // now handles ENI wait/retry internally
+
+            } catch (EcsException e) {
                 System.out.println("❌ AWS ECS Error: ");
+                e.printStackTrace();
             }
             return null;
         }
@@ -430,6 +458,7 @@ public class SearchServer2S {
 
 
     public static void main(String[] args) {
+        System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "error");
         SearchServer2S searchS = new SearchServer2S();
         //searchS.startMatchMakingThreads(); //NOT tickrate
 

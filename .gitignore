@@ -9,6 +9,8 @@ out/
 /*.ipr
 /*.iws
 
+sultan1_accessKeys.csv
+*.env
 # === VS Code ===
 .vscode/
 
