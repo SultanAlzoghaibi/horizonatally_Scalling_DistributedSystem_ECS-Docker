@@ -53,11 +53,13 @@ public class SearchServer2S {
     private String player2ButtonNum;
 
     private char[] gameBoard;
+    private int WARMPOOLINGSIZE = 2;
 
     public SearchServer2S() {
         System.out.println("--search server--");
         numPlayers = 0;
         portNumIncrement = 0;
+
 
         gameServerIpQueues.put("chess", new LinkedList<>());
         gameServerIpQueues.put("tictactoe", new LinkedList<>());
@@ -71,6 +73,13 @@ public class SearchServer2S {
         gameQueues.put("checkers", new ArrayList<SscPlayerData>() );
 
         System.out.println("gameQueues:" + gameQueues.toString());
+
+        for (String gameMode : gameServerIpQueues.keySet()) {
+            for (int i = 0; i < WARMPOOLINGSIZE; i++) {
+                gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
+            }
+        }
+
 
         try{
             ss = new ServerSocket(30000);
@@ -91,6 +100,173 @@ public class SearchServer2S {
             }
         }));
         // End of chatGTP
+    }
+
+    public String getPublicIpFromTaskArn(String taskArn) {
+
+        EcsClient ecsClient = EcsClient.builder()
+                .region(Region.US_EAST_1)
+                .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                .build();
+
+        Ec2Client ec2Client = Ec2Client.builder()
+                .region(Region.US_EAST_1)
+                .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                .build();
+
+        String eniId = null;
+
+        // Wait for ENI to be attached (max 60s)
+        long startTime = System.nanoTime();
+        System.out.print("ENI API call time: ");
+        for (int i = 0; i < 600; i++) {
+            try {
+                DescribeTasksRequest describeRequest = DescribeTasksRequest.builder()
+                        .cluster("h-scalling")
+                        .tasks(taskArn)
+                        .build();
+
+                DescribeTasksResponse describeResponse = ecsClient.describeTasks(describeRequest);
+
+                List<Attachment> attachments = describeResponse.tasks().get(0).attachments();
+                if (!attachments.isEmpty()) {
+                    eniId = attachments.stream()
+                            .filter(a -> a.type().equals("ElasticNetworkInterface"))
+                            .flatMap(a -> a.details().stream())
+                            .filter(d -> d.name().equals("networkInterfaceId"))
+                            .map(KeyValuePair::value)
+                            .findFirst()
+                            .orElse(null);
+
+                    if (eniId != null) {
+                        long endTime = System.nanoTime();
+                        double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+                        System.out.printf("%.2f", durationSeconds);
+                        System.out.println();
+                        System.out.println("🔍 ENI ID found: " + eniId);
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Error while fetching ENI: ");
+            }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                System.out.println("int");
+            }
+        }
+
+        if (eniId == null) {
+            System.out.println("❌ ENI ID not found after timeout.");
+            return null;
+        }
+
+        // ✅ Now wait for public IP to be available on that ENI (max 30s)
+        System.out.print("⌛ Waiting for public IP: ");
+        startTime = System.nanoTime();
+
+        for (int i = 0; i < 300; i++) {
+            try {
+                DescribeNetworkInterfacesResponse eniResponse = ec2Client.describeNetworkInterfaces(
+                        DescribeNetworkInterfacesRequest.builder()
+                                .networkInterfaceIds(eniId)
+                                .build()
+                );
+
+                NetworkInterfaceAssociation assoc = eniResponse.networkInterfaces().get(0).association();
+                if (assoc != null && assoc.publicIp() != null) {
+                    String publicIp = assoc.publicIp();
+                    long endTime = System.nanoTime();
+                    double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+                    System.out.printf("%.2f", durationSeconds);
+                    System.out.println();
+
+                    System.out.println("🌐 Public IP found: " + publicIp);
+                    return publicIp;
+                } else {
+
+                }
+            } catch (Exception e) {
+                System.out.println("❌ Error checking for public IP: ");
+            }
+
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                System.out.println("int");
+            }
+        }
+
+        System.out.println("❌ Public IP not associated after timeout.");
+        return null;
+    }
+
+
+    public String launchGameServerOnECS(String gameMode) {
+        try {
+            // 1. Create ECS client
+            long startTime = System.nanoTime();
+
+            EcsClient ecsClient = EcsClient.builder()
+                    .region(Region.US_EAST_1)
+                    .credentialsProvider(ProfileCredentialsProvider.create("default"))
+                    .build();
+
+            // 2. VPC Networking config
+            AwsVpcConfiguration vpcConfig = AwsVpcConfiguration.builder()
+                    .subnets("subnet-0a3c6f71109e9e394")
+                    .securityGroups("sg-08e5d65f17952b574")
+                    .assignPublicIp(AssignPublicIp.ENABLED)
+                    .build();
+
+            NetworkConfiguration networkConfig = NetworkConfiguration.builder()
+                    .awsvpcConfiguration(vpcConfig)
+                    .build();
+
+            // 3. Container override
+            ContainerOverride override = ContainerOverride.builder()
+                    .name("GameServerC") // MUST match your container name in ECS
+                    .command(gameMode)
+                    .build();
+
+            TaskOverride taskOverride = TaskOverride.builder()
+                    .containerOverrides(override)
+                    .build();
+
+            // 4. Launch ECS task
+            RunTaskRequest request = RunTaskRequest.builder()
+                    .cluster("h-scalling")
+                    .launchType(LaunchType.FARGATE)
+                    .taskDefinition("gameserver-task")
+                    .networkConfiguration(networkConfig)
+                    .overrides(taskOverride)
+                    .build();
+
+            RunTaskResponse response = ecsClient.runTask(request);
+
+            if (!response.failures().isEmpty()) {
+                System.out.println("🚨 Failed to run ECS task: " + response.failures());
+                return null;
+            }
+
+            String taskArn = response.tasks().get(0).taskArn();
+            System.out.println("✅ GameServer task launched: " + taskArn);
+
+
+            long endTime = System.nanoTime();
+            double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+            System.out.print("launchGameServerOnECS Time: ");
+            System.out.printf("%.2f", durationSeconds);
+            System.out.println();
+
+            return getPublicIpFromTaskArn(taskArn); // now handles ENI wait/retry internally
+
+        } catch (EcsException e) {
+            System.out.println("❌ AWS ECS Error: ");
+            e.printStackTrace();
+        }
+        return null;
     }
 
     class SscPlayerData {
@@ -190,7 +366,6 @@ public class SearchServer2S {
             playerID = id;
 
 
-
             try {
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
@@ -257,12 +432,14 @@ public class SearchServer2S {
                 System.out.println("IP ADRESS");
                 long startTime = System.nanoTime();
                 // for deguggin later
-                String ipAddress1 = gameServerIpQueues.get(gameMode).poll();
-
+                String ipAddress = gameServerIpQueues.get(gameMode).poll();
+                System.out.println("gamode : " + gameMode + " has a queue size or" + gameServerIpQueues.get(gameMode).size());
                 Thread t = new Thread(() -> {
+                    System.out.println("thread of adding to queue");
                     gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
                 }); t.start();
-                String ipAddress = launchGameServerOnECS(gameMode);
+
+                //String ipAddress = launchGameServerOnECS(gameMode);
 
                 long endTime = System.nanoTime();
                 double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
@@ -272,7 +449,7 @@ public class SearchServer2S {
                 System.out.println("🌐 Public IP of GameServer: " + ipAddress);
 
                 try {
-                    Thread.sleep(30000);
+                    Thread.sleep(300);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -286,172 +463,7 @@ public class SearchServer2S {
         }
         // i ASK CHATGTP a bit here, AS im not familar with the aws and
         // AWS SDK Java API docs i svery big and tentious when I tried.
-        public String getPublicIpFromTaskArn(String taskArn) {
 
-            EcsClient ecsClient = EcsClient.builder()
-                    .region(Region.US_EAST_1)
-                    .credentialsProvider(ProfileCredentialsProvider.create("default"))
-                    .build();
-
-            Ec2Client ec2Client = Ec2Client.builder()
-                    .region(Region.US_EAST_1)
-                    .credentialsProvider(ProfileCredentialsProvider.create("default"))
-                    .build();
-
-            String eniId = null;
-
-            // Wait for ENI to be attached (max 60s)
-            long startTime = System.nanoTime();
-            System.out.print("ENI API call time: ");
-            for (int i = 0; i < 600; i++) {
-                try {
-                    DescribeTasksRequest describeRequest = DescribeTasksRequest.builder()
-                            .cluster("h-scalling")
-                            .tasks(taskArn)
-                            .build();
-
-                    DescribeTasksResponse describeResponse = ecsClient.describeTasks(describeRequest);
-
-                    List<Attachment> attachments = describeResponse.tasks().get(0).attachments();
-                    if (!attachments.isEmpty()) {
-                        eniId = attachments.stream()
-                                .filter(a -> a.type().equals("ElasticNetworkInterface"))
-                                .flatMap(a -> a.details().stream())
-                                .filter(d -> d.name().equals("networkInterfaceId"))
-                                .map(KeyValuePair::value)
-                                .findFirst()
-                                .orElse(null);
-
-                        if (eniId != null) {
-                            long endTime = System.nanoTime();
-                            double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
-                            System.out.printf("%.2f", durationSeconds);
-                            System.out.println();
-                            System.out.println("🔍 ENI ID found: " + eniId);
-                            break;
-                        }
-                    }
-                } catch (Exception e) {
-                    System.out.println("❌ Error while fetching ENI: ");
-                }
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    System.out.println("int");
-                }
-            }
-
-            if (eniId == null) {
-                System.out.println("❌ ENI ID not found after timeout.");
-                return null;
-            }
-
-            // ✅ Now wait for public IP to be available on that ENI (max 30s)
-            System.out.print("⌛ Waiting for public IP: ");
-            startTime = System.nanoTime();
-
-            for (int i = 0; i < 300; i++) {
-                try {
-                    DescribeNetworkInterfacesResponse eniResponse = ec2Client.describeNetworkInterfaces(
-                            DescribeNetworkInterfacesRequest.builder()
-                                    .networkInterfaceIds(eniId)
-                                    .build()
-                    );
-
-                    NetworkInterfaceAssociation assoc = eniResponse.networkInterfaces().get(0).association();
-                    if (assoc != null && assoc.publicIp() != null) {
-                        String publicIp = assoc.publicIp();
-                        long endTime = System.nanoTime();
-                        double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
-                        System.out.printf("%.2f", durationSeconds);
-                        System.out.println();
-
-                        System.out.println("🌐 Public IP found: " + publicIp);
-                        return publicIp;
-                    } else {
-
-                    }
-                } catch (Exception e) {
-                    System.out.println("❌ Error checking for public IP: ");
-                }
-
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    System.out.println("int");
-                }
-            }
-
-            System.out.println("❌ Public IP not associated after timeout.");
-            return null;
-        }
-
-
-        public String launchGameServerOnECS(String gameMode) {
-            try {
-                // 1. Create ECS client
-                long startTime = System.nanoTime();
-
-                EcsClient ecsClient = EcsClient.builder()
-                        .region(Region.US_EAST_1)
-                        .credentialsProvider(ProfileCredentialsProvider.create("default"))
-                        .build();
-
-                // 2. VPC Networking config
-                AwsVpcConfiguration vpcConfig = AwsVpcConfiguration.builder()
-                        .subnets("subnet-0a3c6f71109e9e394")
-                        .securityGroups("sg-08e5d65f17952b574")
-                        .assignPublicIp(AssignPublicIp.ENABLED)
-                        .build();
-
-                NetworkConfiguration networkConfig = NetworkConfiguration.builder()
-                        .awsvpcConfiguration(vpcConfig)
-                        .build();
-
-                // 3. Container override
-                ContainerOverride override = ContainerOverride.builder()
-                        .name("GameServerC") // MUST match your container name in ECS
-                        .command(gameMode)
-                        .build();
-
-                TaskOverride taskOverride = TaskOverride.builder()
-                        .containerOverrides(override)
-                        .build();
-
-                // 4. Launch ECS task
-                RunTaskRequest request = RunTaskRequest.builder()
-                        .cluster("h-scalling")
-                        .launchType(LaunchType.FARGATE)
-                        .taskDefinition("gameserver-task")
-                        .networkConfiguration(networkConfig)
-                        .overrides(taskOverride)
-                        .build();
-
-                RunTaskResponse response = ecsClient.runTask(request);
-
-                if (!response.failures().isEmpty()) {
-                    System.out.println("🚨 Failed to run ECS task: " + response.failures());
-                    return null;
-                }
-
-                String taskArn = response.tasks().get(0).taskArn();
-                System.out.println("✅ GameServer task launched: " + taskArn);
-
-
-                long endTime = System.nanoTime();
-                double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
-                System.out.print("launchGameServerOnECS Time: ");
-                System.out.printf("%.2f", durationSeconds);
-                System.out.println();
-
-                return getPublicIpFromTaskArn(taskArn); // now handles ENI wait/retry internally
-
-            } catch (EcsException e) {
-                System.out.println("❌ AWS ECS Error: ");
-                e.printStackTrace();
-            }
-            return null;
-        }
 
 
         public void matchMakingToElo(){
