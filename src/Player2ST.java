@@ -447,7 +447,7 @@ public class Player2ST extends Application {
         public CscToGameServer() {
             System.out.println("Client side connection -- GameServer");
             try {
-                socket = new Socket(gameServerIP, 30001);
+                this.socket = new Socket(gameServerIP, 30001);
 
                 dataOut = new DataOutputStream(socket.getOutputStream());
                 dataIn = new DataInputStream(socket.getInputStream());
@@ -528,7 +528,7 @@ public class Player2ST extends Application {
         public CscToSearchServer() {
             System.out.println("Client side connection -- SearchServer");
             try {
-                Socket socket = new Socket("localhost", 30000);
+                this.socket = new Socket("localhost", 30000);
 
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());

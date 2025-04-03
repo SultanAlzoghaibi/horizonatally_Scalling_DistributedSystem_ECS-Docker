@@ -45,6 +45,7 @@ public class SearchServer2S {
     private PlayerData tempPlayerData;
     private int portNumIncrement;
     private HashMap<String, ArrayList<SscPlayerData>> gameQueues = new HashMap<>();
+    private HashMap<String, Queue<String>> gameServerIpQueues = new HashMap<>();
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
@@ -57,6 +58,12 @@ public class SearchServer2S {
         System.out.println("--search server--");
         numPlayers = 0;
         portNumIncrement = 0;
+
+        gameServerIpQueues.put("chess", new LinkedList<>());
+        gameServerIpQueues.put("tictactoe", new LinkedList<>());
+        gameServerIpQueues.put("connect4", new LinkedList<>());
+        gameServerIpQueues.put("checkers", new LinkedList<>());
+
 
         gameQueues.put("chess", new ArrayList<SscPlayerData>() );
         gameQueues.put("connect4", new ArrayList<SscPlayerData>() );
@@ -240,20 +247,23 @@ public class SearchServer2S {
 
         public void gameModeMatchMakingToElo(String gameMode){
             ArrayList<SscPlayerData> sscPDArraylist = gameQueues.get(gameMode);
+
             if(sscPDArraylist.size() >= 2){
                 System.out.println("sscPlayerDataArrayList >= 2");
                 SscPlayerData player1 = sscPDArraylist.removeFirst();
                 SscPlayerData player2 = sscPDArraylist.removeFirst();
-                portNumIncrement++;
-                //portNumIncrement = 1;
-                int portNumber = 30000 + portNumIncrement;
-                String strPortNumber = Integer.toString(portNumber);
 
 
                 System.out.println("IP ADRESS");
-                // for deguggin later
                 long startTime = System.nanoTime();
+                // for deguggin later
+                String ipAddress1 = gameServerIpQueues.get(gameMode).poll();
+
+                Thread t = new Thread(() -> {
+                    gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
+                }); t.start();
                 String ipAddress = launchGameServerOnECS(gameMode);
+
                 long endTime = System.nanoTime();
                 double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
                 System.out.printf("⏱️ Time to get public IP: %.2f seconds: ", durationSeconds);
@@ -262,7 +272,7 @@ public class SearchServer2S {
                 System.out.println("🌐 Public IP of GameServer: " + ipAddress);
 
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(30000);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }

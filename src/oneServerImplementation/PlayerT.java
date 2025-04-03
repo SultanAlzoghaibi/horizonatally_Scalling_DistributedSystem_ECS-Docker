@@ -287,7 +287,7 @@ public class PlayerT extends Application {
         public ClientSideConnection() {
             System.out.println("Client side connection");
             try {
-                socket = new Socket("localhost", 30000);
+                socket = new Socket("3.234.246.29", 30001);
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
 
