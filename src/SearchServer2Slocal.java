@@ -1,3 +1,12 @@
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.ec2.Ec2Client;
+import software.amazon.awssdk.services.ec2.model.DescribeNetworkInterfacesRequest;
+import software.amazon.awssdk.services.ec2.model.DescribeNetworkInterfacesResponse;
+import software.amazon.awssdk.services.ec2.model.NetworkInterfaceAssociation;
+import software.amazon.awssdk.services.ecs.EcsClient;
+import software.amazon.awssdk.services.ecs.model.*;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -6,30 +15,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-// AWS
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.services.ecs.EcsClient;
-import software.amazon.awssdk.services.ec2.Ec2Client;
-import software.amazon.awssdk.services.ec2.model.*;
-import software.amazon.awssdk.services.ecs.model.*;
 
-
-
-import software.amazon.awssdk.services.ecs.model.*;
-import software.amazon.awssdk.services.ecs.model.*;
-// EC2 SDK (to get public IP from ENI)
-
-import software.amazon.awssdk.services.ec2.model.DescribeNetworkInterfacesRequest;
-import software.amazon.awssdk.services.ec2.model.DescribeNetworkInterfacesResponse;
-import software.amazon.awssdk.services.ec2.model.*;
-
-// AWS region
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.ecs.EcsClient;
-
-
-public class SearchServer2S {
+public class SearchServer2Slocal {
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
     private ServerSocket ss;
     private int numPlayers;
@@ -50,7 +37,7 @@ public class SearchServer2S {
     private char[] gameBoard;
     private int WARMPOOLINGSIZE = 2;
 
-    public SearchServer2S() {
+    public SearchServer2Slocal() {
         System.out.println("--search server--");
         numPlayers = 0;
         portNumIncrement = 0;
@@ -101,10 +88,12 @@ public class SearchServer2S {
 
         EcsClient ecsClient = EcsClient.builder()
                 .region(Region.US_EAST_1)
+                .credentialsProvider(ProfileCredentialsProvider.create("default"))
                 .build();
 
         Ec2Client ec2Client = Ec2Client.builder()
                 .region(Region.US_EAST_1)
+                .credentialsProvider(ProfileCredentialsProvider.create("default"))
                 .build();
 
         String eniId = null;
@@ -203,6 +192,7 @@ public class SearchServer2S {
 
             EcsClient ecsClient = EcsClient.builder()
                     .region(Region.US_EAST_1)
+                    .credentialsProvider(ProfileCredentialsProvider.create("default"))
                     .build();
 
             // 2. VPC Networking config
@@ -456,6 +446,71 @@ public class SearchServer2S {
         // AWS SDK Java API docs i svery big and tentious when I tried.
 
 
+
+        public void matchMakingToElo(){
+
+            if(sscPlayerDataArrayList.size() >= 2){
+                System.out.println("sscPlayerDataArrayList >= 2");
+                SscPlayerData player1 = sscPlayerDataArrayList.removeFirst();
+                SscPlayerData player2 = sscPlayerDataArrayList.removeFirst();
+                portNumIncrement++;
+                //portNumIncrement = 1;
+                int portNumber = 30000 + portNumIncrement;
+                String strPortNumber = Integer.toString(portNumber);
+
+                //ASKED chatGTP fro porces builder file path ans
+                ProcessBuilder pb = new ProcessBuilder(
+                        "java",
+                        "-cp",
+                        "/Users/sultan/Desktop/seng-300/JavaWebSockets/out/production/JavaWebSockets",
+                        "GameServer2ST",
+                        strPortNumber
+                );
+
+
+                try {
+                    Process process = pb.start(); // storing the process but might not use tho.
+                    System.out.println("Launched GameServer2ST on port: " + strPortNumber);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                //End of chatGTP
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+
+                player1.getSsc().sendserverPortNumber(portNumber);
+                player2.getSsc().sendserverPortNumber(portNumber);
+                System.out.println( "sent them port num: " + portNumber);
+                //System.exit(0);
+
+            }
+        }
+        public void closeConnection() { // ask chatgtp to fill our this method
+            try {
+                if (dataInObj != null) {
+                    dataInObj.close();
+                }
+                if (dataOutObj != null) {
+                    dataOutObj.close();
+                }
+                if (dataIn != null) {
+                    dataIn.close();
+                }
+                if (dataOut != null) {
+                    dataOut.close();
+                }
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
+                }
+                System.out.println("Connection closed for Player ID: " + playerID);
+            } catch (IOException e) {
+                System.out.println("Error closing connection: " + e.getMessage());
+            }
+        }
+
         public void printGameQueues() {
             System.out.print("{");
             for (String gameQueue : gameQueues.keySet()) {
@@ -464,7 +519,15 @@ public class SearchServer2S {
             System.out.print("}");
         }
 
-
+        public void sendserverPortNumber(int portNum){
+            try{
+                dataOut.writeInt(portNum);
+                dataOut.flush();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.out.println("Exception in sendserverPortNumber");
+            }
+        }
         public void sendIPAddress(String ip){
 
             try {
@@ -498,7 +561,7 @@ public class SearchServer2S {
 
     public static void main(String[] args) {
         System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "error");
-        SearchServer2S searchS = new SearchServer2S();
+        SearchServer2Slocal searchS = new SearchServer2Slocal();
         //searchS.startMatchMakingThreads(); //NOT tickrate
 
 
