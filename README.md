@@ -1,0 +1,1 @@
+To run this contact me, ill run the ECS container you'll, only run player as many times as you want and then see how they all can play independently, this is th eonly way possibel as u need aws cloud computing for this version to work
