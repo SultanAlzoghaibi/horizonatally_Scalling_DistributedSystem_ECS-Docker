@@ -17,4 +17,5 @@ public class PracticeGameObj implements Serializable {
     public char[][] getBoard() { return board; }
     public boolean isWin() { return win; }
     public void setWin(boolean win) { this.win = win; }
+
 }

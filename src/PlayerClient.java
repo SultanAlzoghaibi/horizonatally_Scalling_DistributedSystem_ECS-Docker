@@ -214,8 +214,7 @@ public class PlayerClient extends Application {
 
 // 🔥 Add chat components once (in order)
         root.getChildren().addAll(chatLabel, chatArea, chatInputBox);
-        
-        
+
         if (playerID == 1) {
             message.setText("You are player 1, you go first");
             otherPlayerID = 2;
@@ -425,7 +424,6 @@ public class PlayerClient extends Application {
             }
         }
 
-
         public void receivePracticeGameObj(){
             try {
                 Object tempObj = gameInObj.readObject(); // vague object gets "catched first_
@@ -436,8 +434,6 @@ public class PlayerClient extends Application {
                 System.out.println("object class not found");
             }
         }
-
-
 
 
         public void closeConnection() {

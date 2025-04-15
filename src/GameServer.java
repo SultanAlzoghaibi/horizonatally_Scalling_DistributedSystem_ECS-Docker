@@ -22,19 +22,16 @@ public class GameServer {
 
     private ServerSideConnection player1Chat;
     private ServerSideConnection player2Chat;
-
+    static String gameMode;
 
     private int turnsMade;
-    private int maxTurns;
-    private int[] values;
-    private char[][] server2dChar;
 
     // store the  the button num that the player clicked on, befroe being sent to the other player
     // don in the run method while loop, for each turns
     private String player1ButtonNum;
     private String player2ButtonNum;
     private PracticeGameObj practiceGameObj;
-    private char[] gameBoard;
+
     private HashMap<Integer, String> chatLogs;
 
 
@@ -51,8 +48,8 @@ public class GameServer {
         practiceGameObj = new PracticeGameObj(false, new char[2][2], "test");
 
         try{
-            gameServerSocket = new ServerSocket(30000);
-            chatServerSocket = new ServerSocket(30001);
+            gameServerSocket = new ServerSocket(30001);
+            chatServerSocket = new ServerSocket(30002);
 
         } catch(IOException e){
             System.out.println("IOException from game server constructor");
@@ -65,9 +62,11 @@ public class GameServer {
 
     public void acceptConnections(){
         try {
-            System.out.println("waiting for connections");
+
             while (numPlayers < 2) {
+                System.out.println("waiting for connections");
                 Socket gameSocket = gameServerSocket.accept();
+                System.out.println("game connection accepted");
                 Socket chatSocket = chatServerSocket.accept();
                 numPlayers++;
 
@@ -299,22 +298,12 @@ public class GameServer {
         }
 
         private void placeMove(String input, char symbol) {
-            if (symbol == 'O'){
-                System.out.println("processGameLogic for player 2, input: " + input);
-            }
-            else {
-                System.out.println("processGameLogic for player 1, input: " + input);
+            if(gameMode == "tictactoe") {
+
+            } else{
+
             }
 
-            int move = Integer.parseInt(input) - 1; // Convert input to index (0-based)
-            int row = move / 3;
-            int col = move % 3;
-
-            if (server2dChar[row][col] == ' ') { // Check if the cell is empty
-                server2dChar[row][col] = symbol;
-            } else {
-                System.out.println("Invalid move! Cell already occupied.");
-            }
         }
         // END of chatgtp tentious work
 
