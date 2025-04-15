@@ -4,6 +4,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -92,7 +93,7 @@ public class GameServer {
 
 
 
-    private class ServerSideConnection implements Runnable{
+    private class ServerSideConnection implements Runnable {
         private Socket gameSocket;
         private Socket chatSocket;
 
@@ -105,7 +106,7 @@ public class GameServer {
 
         private int playerID;
 
-        public ServerSideConnection(Socket gameSocket1, Socket chatSocket1, int id){
+        public ServerSideConnection(Socket gameSocket1, Socket chatSocket1, int id) {
             gameSocket = gameSocket1;
             chatSocket = chatSocket1;
             playerID = id;
@@ -116,8 +117,8 @@ public class GameServer {
                 gameInObj = new ObjectInputStream(gameSocket.getInputStream());
 
 
-                 chatOutObj = new ObjectOutputStream(chatSocket.getOutputStream());
-                 chatInObj = new ObjectInputStream(chatSocket.getInputStream());
+                chatOutObj = new ObjectOutputStream(chatSocket.getOutputStream());
+                chatInObj = new ObjectInputStream(chatSocket.getInputStream());
             } catch (IOException e) {
                 System.out.println("IOException from game server constructor: ServerSideConnection");
             }
@@ -184,7 +185,7 @@ public class GameServer {
         }
         // End of censorship logic
 
-        public void run(){ // insctruction we want to run on a NEW thread
+        public void run() { // insctruction we want to run on a NEW thread
             try {
                 System.out.println("sent player ID: " + playerID);
                 dataOut.writeInt(playerID);
@@ -194,7 +195,7 @@ public class GameServer {
                 }).start();
 
                 while (true) {
-                    if(playerID == 1){
+                    if (playerID == 1) {
                         practiceGameObj = (PracticeGameObj) gameInObj.readObject();  // Reads one char and converts to String // read it from player 1
                         player1ButtonNum = practiceGameObj.getTestString();
                         System.out.println("Payer 1 clicked button #" + player1ButtonNum);
@@ -203,8 +204,7 @@ public class GameServer {
                         player2Ssc.sendPracticeGameObj(); // sending server2dChar
 
 
-                    }
-                    else{
+                    } else {
                         practiceGameObj = (PracticeGameObj) gameInObj.readObject();
                         player2ButtonNum = practiceGameObj.getTestString();
                         System.out.println("PLayer 2 clicked button #" + player2ButtonNum);
@@ -215,7 +215,7 @@ public class GameServer {
                     }
                     turnsMade++;
 
-                    if(false){
+                    if (false) {
                         System.out.println("GAME HAS ENDED");
                         break; // break from the game and end
                     }
@@ -226,16 +226,17 @@ public class GameServer {
                 System.out.println("ClassNotFoundException from run() : ServerSideConnection");
             }
         }
-        public void sendPracticeGameObj(){
+
+        public void sendPracticeGameObj() {
             try {
                 gameOutObj.writeObject(practiceGameObj);
                 gameOutObj.flush();
-            } catch (IOException e){
+            } catch (IOException e) {
                 System.out.println("IOException from game server sendPracticeGameObj");
             }
         }
 
-       public void handleChatThread(){
+        public void handleChatThread() {
             System.out.println(chatLogs.toString());
             receiveChats();
 
@@ -267,7 +268,7 @@ public class GameServer {
             }
         }
 
-        public void sendChatMessage(String msg){
+        public void sendChatMessage(String msg) {
             try {
                 chatOutObj.writeObject(msg);  // Send the censored message
                 chatOutObj.flush();
@@ -279,7 +280,7 @@ public class GameServer {
         }
 
 
-        public void processGameLogic(int playerID){
+        public void processGameLogic(int playerID) {
             //practiceGameObj = changes made
             // GAME LOGIC TEAM
             //-----------------
@@ -298,25 +299,58 @@ public class GameServer {
         }
 
         private void placeMove(String input, char symbol) {
-            if(gameMode == "tictactoe") {
+            if (gameMode == "tictactoe") {
 
-            } else{
+            } else {
 
             }
 
         }
         // END of chatgtp tentious work
-
-
-
     }
+
+        public void closeServers() {
+            try {
+                if (gameServerSocket != null && !gameServerSocket.isClosed()) {
+                    gameServerSocket.close();
+                    System.out.println("Game server socket closed.");
+                }
+                if (chatServerSocket != null && !chatServerSocket.isClosed()) {
+                    chatServerSocket.close();
+                    System.out.println("Chat server socket closed.");
+                }
+            } catch (IOException e) {
+                System.out.println("Error closing server sockets: " + e.getMessage());
+            }
+        }
 
 
 
 
     public static void main(String[] args) {
-        GameServer gs = new GameServer();
-        gs.acceptConnections();
+        System.out.println(Arrays.toString(args));
+        if (args.length == 1) {
+            gameMode = args[0];
+        } else {
+            System.out.println("needed 2 arguments to pass");
+        }
+        gameMode = "tictactoe";
 
+        GameServer gs = new GameServer();
+
+        // Shutdown hook to close the sockets when the application stops.
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Shutdown detected. Closing server sockets...");
+            gs.closeServers();
+        }));
+
+        try {
+            gs.acceptConnections();
+        } catch (Exception e) {
+            System.out.println("Server shutting down...");
+        } finally {
+            gs.closeServers();
+        }
+        // No finally block needed if the shutdown hook is in place.
     }
 }
