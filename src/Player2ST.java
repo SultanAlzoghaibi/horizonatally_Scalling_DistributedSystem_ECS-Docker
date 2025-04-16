@@ -84,7 +84,7 @@ public class Player2ST extends Application {
         primaryStage.setWidth(width);
         primaryStage.setHeight(height);
         primaryStage.setTitle("The Game Menu");
-        practiceGameObj = new PracticeGameObj(false, new char[3][3], "test");
+
 
         // Initialize arrays and variables
         turnsMade = 0;
@@ -187,17 +187,15 @@ public class Player2ST extends Application {
         primaryStage.show();
     }
 
+
     private void setUpGameScene(Stage primaryStage) {
-
-        primaryStage.setTitle("TicTacToe - Player #" + playerID);
-
-        gameButtons.clear();
-
+        primaryStage.setTitle("Game - Player #" + playerID);
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
         root.setAlignment(Pos.CENTER);
 
-        // Message area
+        gameButtons.clear(); // Avoid duplicates
+
         message = new TextArea();
         message.setWrapText(true);
         message.setEditable(false);
@@ -210,43 +208,67 @@ public class Player2ST extends Application {
         grid.setVgap(10);
         grid.setAlignment(Pos.CENTER);
 
-        char[][] board = practiceGameObj.getBoard();
-        gameButtons.clear(); // avoid duplicates
 
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 3; col++) {
-                Button cell = new Button();
-                cell.setPrefSize(60, 60);
-                cell.setStyle("-fx-font-size: 24px;");
-                gameButtons.add(cell);
+        if (gameMode.equals("tictactoe")) {
+            practiceGameObj = new PracticeGameObj(false, new char[3][3],"test" );
+            char[][] board = practiceGameObj.getBoard();
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 3; col++) {
+                    Button cell = new Button();
+                    cell.setPrefSize(60, 60);
+                    cell.setStyle("-fx-font-size: 24px;");
+                    gameButtons.add(cell);
 
-                int r = row;
-                int c = col;
+                    int r = row;
+                    int c = col;
 
-                cell.setText((board[r][c] == 'X' || board[r][c] == 'O') ? String.valueOf(board[r][c]) : "");
+                    cell.setText((board[r][c] == 'X' || board[r][c] == 'O') ? String.valueOf(board[r][c]) : "");
 
-                cell.setOnAction(e -> {
-                        char symbol = (playerID == 1) ? 'X' : 'O';
-                        board[r][c] = symbol;
-                        cell.setText(String.valueOf(symbol));
-                        int cellNum = r * 3 + c + 1;
-                        practiceGameObj.setInputString(String.valueOf(cellNum));
-                        System.out.println("Button: " + cellNum + "pressed");
-                    for (int i = 0; i < 3; i++) {
-                        for (int j = 0; j < 3; j++) {
-                            System.out.print(practiceGameObj.getBoard()[i][j] + ",");
+                    cell.setOnAction(e -> {
+                        if (board[r][c] == '\0' && buttonsEnabled) {
+                            char symbol = (playerID == 1) ? 'X' : 'O';
+                            board[r][c] = symbol;
+                            cell.setText(String.valueOf(symbol));
+                            int cellNum = r * 3 + c + 1;
+                            practiceGameObj.setInputString(String.valueOf(cellNum));
+                            cscGS.sendPracticeGameObj();
+                            buttonsEnabled = false;
+                            toggleButtons();
+                            new Thread(this::updateTurn).start();
                         }
-                        System.out.println();
+                    });
 
-                    }
+                    grid.add(cell, c, r);
+                }
+            }
+        } else if (gameMode.equals("connect4")) {
+            practiceGameObj = new PracticeGameObj(false, new char[6][7],"test" );
+            char[][] board = practiceGameObj.getBoard();
+            for (int row = 0; row < 6; row++) {
+                for (int col = 0; col < 7; col++) {
+                    Button cell = new Button();
+                    cell.setPrefSize(60, 60);
+                    cell.setStyle("-fx-font-size: 20px;");
+                    gameButtons.add(cell);
 
-                        cscGS.sendPracticeGameObj();
-                        buttonsEnabled = false;
-                        toggleButtons();
-                        new Thread(this::updateTurn).start();
-                });
+                    int c = col;
+                    cell.setOnAction(e -> {
+                        if (!buttonsEnabled) return;
 
-                grid.add(cell, c, r);
+                        int dropRow = findAvailableRow(board, c);
+                        if (dropRow != -1) {
+                            char symbol = (playerID == 1) ? 'X' : 'O';
+                            board[dropRow][c] = symbol;
+                            practiceGameObj.setInputString(dropRow + "," + c);
+                            cscGS.sendPracticeGameObj();
+                            buttonsEnabled = false;
+                            toggleButtons();
+                            new Thread(this::updateTurn).start();
+                        }
+                    });
+
+                    grid.add(cell, col, row);
+                }
             }
         }
 
@@ -282,26 +304,33 @@ public class Player2ST extends Application {
 
         root.getChildren().addAll(chatLabel, chatArea, chatInputBox);
 
-        // === Set Scene ===
-        Scene scene = new Scene(root, 300, 500);
+        // === Final scene ===
+        Scene scene = new Scene(root, 400, 550);
         primaryStage.setScene(scene);
         primaryStage.show();
 
         // === Turn setup ===
         if (playerID == 1) {
-            message.setText("You are Player 1 (X). Your turn.");
-            buttonsEnabled = true;
+            message.setText("You are player 1, you go first");
             otherPlayerID = 2;
+            buttonsEnabled = true;
         } else {
-            message.setText("You are Player 2 (O). Waiting for opponent...");
-            buttonsEnabled = false;
+            message.setText("You are player 2, wait for your turn");
             otherPlayerID = 1;
+            buttonsEnabled = false;
             new Thread(this::updateTurn).start();
         }
-
         toggleButtons();
     }
 
+    private int findAvailableRow(char[][] board, int col) {
+        for (int row = board.length - 1; row >= 0; row--) {
+            if (board[row][col] == '\0') {
+                return row;
+            }
+        }
+        return -1; // No available row in this column
+    }
 
     /**
      * Sets the onAction for each of the 9 game buttons.

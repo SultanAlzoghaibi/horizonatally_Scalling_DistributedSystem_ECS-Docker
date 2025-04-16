@@ -161,6 +161,13 @@ public class GameServer {
                         System.out.println("GAME HAS ENDED");
                         break; // break from the game and end
                     }
+
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            System.out.print(practiceGameObj.getBoard()[i][j] + ",");
+                        }
+                        System.out.println();
+                    }
                 }
             } catch (IOException e) {
                 System.out.println("IOException from run() : ServerSideConnection");
@@ -269,26 +276,27 @@ public class GameServer {
         }
 
         private void tictactoePlaceMove(String input, char symbol) {
-            // Convert input to 0-based move index
             int move = Integer.parseInt(input) - 1;
             int row = move / 3;
             int col = move % 3;
 
-            // Retrieve the current board from PracticeGameObj
-            // Assume board is a 3x3 char array representing the TicTacToe grid.
             char[][] board = practiceGameObj.getBoard();
 
-            // If the board is uninitialized, create a new empty board filled with blanks (' ')
-            if (board == null || board.length != 3) {
+            // Safeguard: if board is null or invalid size, reinitialize it
+            if (board == null || board.length != 3 || board[0].length != 3) {
                 board = new char[3][3];
                 for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        board[i][j] = ' ';  // blank space represents an empty cell
-                    }
+                    Arrays.fill(board[i], '\0'); // OR ' '
                 }
             }
-            // Check if the cell is empty before placing the move
 
+            // Only place symbol if cell is empty
+            if (board[row][col] == '\0' || board[row][col] == ' ') {
+                board[row][col] = symbol;
+            }
+
+            // 💥 Don't forget to write back updated board into the object
+            practiceGameObj.setBoard(board);
         }
 
 
