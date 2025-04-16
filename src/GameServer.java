@@ -288,13 +288,7 @@ public class GameServer {
                 }
             }
             // Check if the cell is empty before placing the move
-            if (board[row][col] == ' ' || board[row][col] == '\0') {
-                board[row][col] = symbol;
-                practiceGameObj.setBoard(board);  // Update the PracticeGameObj's board
-                System.out.printf("Move placed at row %d, column %d with symbol '%c'%n", row, col, symbol);
-            } else {
-                System.out.printf("Invalid move: cell at row %d, column %d is already occupied.%n", row, col);
-            }
+
         }
 
 
@@ -320,29 +314,28 @@ public class GameServer {
 
 
     public static void main(String[] args) {
-        System.out.println(Arrays.toString(args));
+        // Set game mode from args if provided, else default to tictactoe
         if (args.length == 1) {
             gameMode = args[0];
         } else {
-            System.out.println("needed 2 arguments to pass");
+            System.out.println("No mode passed. Using default: tictactoe");
+            gameMode = "tictactoe";
         }
-        gameMode = "connect4";
 
         GameServer gs = new GameServer();
 
-        // Shutdown hook to close the sockets when the application stops.
+        // Add shutdown hook to close the server gracefully
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutdown detected. Closing server sockets...");
             gs.closeServers();
         }));
 
         try {
+            System.out.println("Accepting connections...");
             gs.acceptConnections();
         } catch (Exception e) {
-            System.out.println("Server shutting down...");
-        } finally {
-            gs.closeServers();
+            System.out.println("Exception in GameServer: " + e.getMessage());
+            e.printStackTrace();
         }
-        // No finally block needed if the shutdown hook is in place.
     }
 }
