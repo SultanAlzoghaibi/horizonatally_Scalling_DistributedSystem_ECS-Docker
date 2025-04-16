@@ -4,17 +4,19 @@ public class PracticeGameObj implements Serializable {
     private static final long serialVersionUID = 1L;
     private boolean win;
     private char[][] board;
-    private String testString;
+    private String inputString;
 
-    public PracticeGameObj(boolean win, char[][] board, String testString) {
+    public PracticeGameObj(boolean win, char[][] board, String inputString) {
         this.win = win;
         this.board = board;
-        this.testString = testString;
+        this.inputString = inputString;
     }
-    public String getTestString() {return testString;}
-    public void setTestString(String testString) {this.testString = testString;}
+    public String getInputString() {return inputString;}
+    public void setInputString(String testString) {this.inputString = testString;}
 
     public char[][] getBoard() { return board; }
+    public void setBoard(char[][] board) { this.board = board; }
+
     public boolean isWin() { return win; }
     public void setWin(boolean win) { this.win = win; }
 

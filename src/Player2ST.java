@@ -57,8 +57,7 @@ public class Player2ST extends Application {
     private char[][] server2dChar;
     private int maxTurns;
     private int turnsMade;
-    private int myPoints;
-    private int enemyPoints;
+
     private boolean buttonsEnabled;
     private boolean gameIsActive;
     private int gameServerPort;
@@ -107,13 +106,8 @@ public class Player2ST extends Application {
         primaryStage.setTitle("The Game Menu");
         practiceGameObj = new PracticeGameObj(false, new char[2][2], "test");
 
-
         // Initialize arrays and variables
-        values = new int[4];
-        server2dChar = new char[3][3];
         turnsMade = 0;
-        myPoints = 0;
-        enemyPoints = 0;
         gameIsActive = false;
         buttonsEnabled = false;
         gameMode = "na";
@@ -350,9 +344,9 @@ public class Player2ST extends Application {
     }
 
     private void handleButtonClick(String strBNum) {
-        practiceGameObj.setTestString(strBNum);
-        message.setText("You clicked button #" + practiceGameObj.getTestString() + " now wait for next player's turn");
-        textGridMessage.setText(practiceGameObj.getBoard().toString());
+        practiceGameObj.setInputString(strBNum);
+        message.setText("You clicked button #" + practiceGameObj.getInputString() + " now wait for next player's turn");
+        textGridMessage.setText(Arrays.deepToString(practiceGameObj.getBoard()));
 
         turnsMade++;
         System.out.println("Turns made: " + turnsMade);
@@ -447,7 +441,7 @@ public class Player2ST extends Application {
      */
     public void updateTurn() {
         cscGS.receivePracticeGameObj();
-        message.setText("your opponent clicked #" + practiceGameObj.getTestString() + "now your Turn");
+        message.setText("your opponent clicked #" + practiceGameObj.getInputString() + "now your Turn");
         textGridMessage.setText(String.valueOf(practiceGameObj.getBoard()[0][0]));
 
         // If P1 hits max turns, check winner
@@ -508,6 +502,16 @@ public class Player2ST extends Application {
 
                 playerID = gameIn.readInt();
                 System.out.println("Player ID: " + playerID);
+
+                gameMode = gameIn.readUTF();
+                System.out.println("gameMode: " + gameMode);
+
+                if (Objects.equals(gameMode, "tictactoe")){
+
+
+                } else if (Objects.equals(gameMode, "connect4")) {
+
+                }
 
                 startChatListener();
 

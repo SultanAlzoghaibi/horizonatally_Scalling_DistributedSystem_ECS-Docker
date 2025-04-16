@@ -125,70 +125,13 @@ public class GameServer {
         }
 
         // Censorship Logic
-        public String censorChat(String message) {
-            List<String> badWords = new ArrayList<>();
-            int censorCount = 0;
-
-            try (BufferedReader br = new BufferedReader(new FileReader("networking/badwords.txt"))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    badWords.add(line.trim());
-                }
-            } catch (IOException e) {
-                System.err.println("Error loading bad words: " + e.getMessage());
-            }
-
-            String filteredMessage = message;
-
-            for (String badWord : badWords) {
-                String censor = generateCensor(badWord);
-
-                // Censor normal word
-                Pattern exactPattern = Pattern.compile("(?i)\\b" + Pattern.quote(badWord) + "\\b");
-                Matcher exactMatcher = exactPattern.matcher(filteredMessage);
-                while (exactMatcher.find()) {
-                    filteredMessage = exactMatcher.replaceFirst(censor);
-                    censorCount++;
-                    exactMatcher = exactPattern.matcher(filteredMessage); // reset matcher
-                }
-
-                // Censor spaced/dotted/etc. bypass versions
-                Pattern bypassPattern = Pattern.compile(buildBypassRegex(badWord), Pattern.CASE_INSENSITIVE);
-                Matcher bypassMatcher = bypassPattern.matcher(filteredMessage);
-                while (bypassMatcher.find()) {
-                    filteredMessage = bypassMatcher.replaceFirst(censor);
-                    censorCount++;
-                    bypassMatcher = bypassPattern.matcher(filteredMessage); // reset matcher
-                }
-            }
-
-            return filteredMessage;
-        }
-
-        public String generateCensor(String word) {
-            if (word.length() <= 1) return "*";
-            StringBuilder censored = new StringBuilder();
-            censored.append(word.charAt(0));
-            for (int i = 1; i < word.length(); i++) {
-                censored.append("*");
-            }
-            return censored.toString();
-        }
-
-        public String buildBypassRegex(String word) {
-            StringBuilder regex = new StringBuilder();
-            for (char c : word.toCharArray()) {
-                regex.append(Pattern.quote(String.valueOf(c)));
-                regex.append("[^a-zA-Z0-9]{0,3}");
-            }
-            return regex.toString();
-        }
-        // End of censorship logic
 
         public void run() { // insctruction we want to run on a NEW thread
             try {
                 System.out.println("sent player ID: " + playerID);
                 dataOut.writeInt(playerID);
+                dataOut.writeUTF(gameMode);
+                dataOut.flush();
 
                 new Thread(() -> {
                     handleChatThread();
@@ -197,19 +140,18 @@ public class GameServer {
                 while (true) {
                     if (playerID == 1) {
                         practiceGameObj = (PracticeGameObj) gameInObj.readObject();  // Reads one char and converts to String // read it from player 1
-                        player1ButtonNum = practiceGameObj.getTestString();
+                        player1ButtonNum = practiceGameObj.getInputString();
                         System.out.println("Payer 1 clicked button #" + player1ButtonNum);
                         // Update array
-                        processGameLogic(1);
+                        processGameLogic(1, player1ButtonNum);
                         player2Ssc.sendPracticeGameObj(); // sending server2dChar
 
 
                     } else {
                         practiceGameObj = (PracticeGameObj) gameInObj.readObject();
-                        player2ButtonNum = practiceGameObj.getTestString();
+                        player2ButtonNum = practiceGameObj.getInputString();
                         System.out.println("PLayer 2 clicked button #" + player2ButtonNum);
-
-                        processGameLogic(2);
+                        processGameLogic(2, player2ButtonNum);
 
                         player1Ssc.sendPracticeGameObj();
                     }
@@ -248,7 +190,7 @@ public class GameServer {
                 while (true) {
                     Object obj = chatInObj.readObject(); // ✅
                     String msg = (String) obj;
-                    msg = censorChat(msg);  // Apply censorship here
+                      // Apply censorship here
 
                     chatLogs.put(this.playerID, msg);  // Store censored message in chat logs
                     System.out.println("PUT Chat Player #" + this.playerID + ": " + msg);
@@ -280,32 +222,82 @@ public class GameServer {
         }
 
 
-        public void processGameLogic(int playerID) {
-            //practiceGameObj = changes made
-            // GAME LOGIC TEAM
-            //-----------------
-            //-----------------
-            //-----------------
-
-        }
-
-        // I ASKED chatgtp to give be a better fromat instead of 2 sets fo 9 if statments
-        public void processGameLogicP1(String input) {
-            placeMove(input, 'X');  // P1 uses 'X'
-        }
-
-        public void processGameLogicP2(String input2) {
-            placeMove(input2, 'O');  // P2 uses 'O'
-        }
-
-        private void placeMove(String input, char symbol) {
-            if (gameMode == "tictactoe") {
-
-            } else {
-
+        public void processGameLogic(int playerID, String input) {
+            if(gameMode.equals("tictactoe")){
+                tictactoePlaceMove(input, playerID == 1 ? 'X' : 'O');
+            }
+            if (gameMode.equals("connect4")) {
+                connect4PlaceMove(input, playerID == 1 ? 'X' : 'O');
             }
 
+
         }
+
+        // I ASKED chatgtp for these as the dont add value to the ecs h-scalling Distrubted sytem
+        private void connect4PlaceMove(String input, char symbol) {
+            int col = Integer.parseInt(input) - 1;
+
+            // Retrieve the current board from PracticeGameObj
+            // Assume board is a 6x7 char array representing the Connect4 grid.
+            char[][] board = practiceGameObj.getBoard();
+
+            // If the board is uninitialized or incorrectly sized, create a new 6x7 board filled with blanks (' ')
+            if (board == null || board.length != 6 || board[0].length != 7) {
+                board = new char[6][7];
+                for (int i = 0; i < 6; i++) {
+                    for (int j = 0; j < 7; j++) {
+                        board[i][j] = ' ';
+                    }
+                }
+            }
+
+            // Drop the piece to the lowest empty row in the selected column
+            boolean movePlaced = false;
+            for (int row = 5; row >= 0; row--) {
+                if (board[row][col] == ' ' || board[row][col] == '\0') {
+                    board[row][col] = symbol;
+                    practiceGameObj.setBoard(board); // Update the PracticeGameObj's board
+                    System.out.printf("Move placed at row %d, column %d with symbol '%c'%n", row, col, symbol);
+                    movePlaced = true;
+                    break;
+                }
+            }
+
+            if (!movePlaced) {
+                System.out.printf("Invalid move: column %d is already full.%n", col);
+            }
+        }
+
+        private void tictactoePlaceMove(String input, char symbol) {
+            // Convert input to 0-based move index
+            int move = Integer.parseInt(input) - 1;
+            int row = move / 3;
+            int col = move % 3;
+
+            // Retrieve the current board from PracticeGameObj
+            // Assume board is a 3x3 char array representing the TicTacToe grid.
+            char[][] board = practiceGameObj.getBoard();
+
+            // If the board is uninitialized, create a new empty board filled with blanks (' ')
+            if (board == null || board.length != 3) {
+                board = new char[3][3];
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        board[i][j] = ' ';  // blank space represents an empty cell
+                    }
+                }
+            }
+            // Check if the cell is empty before placing the move
+            if (board[row][col] == ' ' || board[row][col] == '\0') {
+                board[row][col] = symbol;
+                practiceGameObj.setBoard(board);  // Update the PracticeGameObj's board
+                System.out.printf("Move placed at row %d, column %d with symbol '%c'%n", row, col, symbol);
+            } else {
+                System.out.printf("Invalid move: cell at row %d, column %d is already occupied.%n", row, col);
+            }
+        }
+
+
         // END of chatgtp tentious work
     }
 
@@ -334,7 +326,7 @@ public class GameServer {
         } else {
             System.out.println("needed 2 arguments to pass");
         }
-        gameMode = "tictactoe";
+        gameMode = "connect4";
 
         GameServer gs = new GameServer();
 

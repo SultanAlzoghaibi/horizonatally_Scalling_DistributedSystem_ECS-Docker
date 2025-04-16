@@ -253,8 +253,8 @@ public class PlayerClient extends Application {
 
 
     private void handleButtonClick(String strBNum) {
-        practiceGameObj.setTestString(strBNum);
-        message.setText("You clicked button #" + practiceGameObj.getTestString() + " now wait for next player's turn");
+        practiceGameObj.setInputString(strBNum);
+        message.setText("You clicked button #" + practiceGameObj.getInputString() + " now wait for next player's turn");
         textGridMessage.setText(practiceGameObj.getBoard().toString());
 
         turnsMade++;
@@ -305,7 +305,7 @@ public class PlayerClient extends Application {
      */
     public void updateTurn() {
         csc.receivePracticeGameObj();
-        message.setText("your opponent clicked #" + practiceGameObj.getTestString() + "now your Turn");
+        message.setText("your opponent clicked #" + practiceGameObj.getInputString() + "now your Turn");
         textGridMessage.setText(String.valueOf(practiceGameObj.getBoard()[0][0]));
 
         // If P1 hits max turns, check winner
