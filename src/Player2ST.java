@@ -21,7 +21,7 @@ import java.util.*;
 public class Player2ST extends Application {
 
     private static final int SHIFT_AMOUNT = 100;
-    private int width = 200, height = 400;
+    private int width = 400, height = 800;
 
     private TextArea message, testText;
     private Button startb00;
@@ -113,35 +113,39 @@ public class Player2ST extends Application {
         startTictactoe = new Button("Start Tictactoe");
         startConnect4 = new Button("Start Connect4");
 
-        startb00 = new Button("Start b00");
+       /* startb00 = new Button("Start b00");
 
         startb00.setOnAction(e -> {
             System.out.println("YOU PRESSED THE BUTTON");
             hnadleB00Click();
-        });
+        });*/
 
         startChess.setOnAction(e -> {
             System.out.println("YOU PRESSED CHESS");
             playerData.setGameModeInterested("chess");
+            gameMode = "chess";
             matchmakingButtonPressed();
         });
         startCheckers.setOnAction(e -> {
             System.out.println("YOU PRESSED CHECKERS");
             playerData.setGameModeInterested("checkers");
+            gameMode = "checkers";
             matchmakingButtonPressed();
         });
         startTictactoe.setOnAction(e -> {
             System.out.println("YOU PRESSED TICTACTOE");
             playerData.setGameModeInterested("tictactoe");
+            gameMode = "tictactoe";
             matchmakingButtonPressed();
         });
         startConnect4.setOnAction(e -> {
             System.out.println("YOU PRESSED CONNECT4");
             playerData.setGameModeInterested("connect4");
+            gameMode = "connect4";
             matchmakingButtonPressed();
         });
 
-        menuLayout.getChildren().addAll(startb00, startChess, startCheckers, startTictactoe, startConnect4, testText);
+        menuLayout.getChildren().addAll(startChess, startCheckers, startTictactoe, startConnect4, testText);
         //menuLayout.getChildren().addAll(startChess, testText);
 
         Scene menuScene = new Scene(menuLayout, width, height);
@@ -190,9 +194,14 @@ public class Player2ST extends Application {
 
     private void setUpGameScene(Stage primaryStage) {
         primaryStage.setTitle("Game - Player #" + playerID);
+        Label title = new Label(gameMode.toUpperCase() + " GAME MODE");
+        title.setStyle("-fx-font-size: 26px; -fx-font-weight: bold;");
+
+
         VBox root = new VBox(10);
         root.setPadding(new Insets(15));
         root.setAlignment(Pos.CENTER);
+        root.getChildren().add(title);
 
         gameButtons.clear(); // Avoid duplicates
 
@@ -359,7 +368,6 @@ public class Player2ST extends Application {
         HBox chatInputBox = new HBox(10, chatInput, sendchat);
         chatInputBox.setAlignment(Pos.CENTER);
         chatInputBox.setPadding(new Insets(10));
-
         root.getChildren().addAll(chatLabel, chatArea, chatInputBox);
 
         // === Final scene ===
@@ -409,11 +417,9 @@ public class Player2ST extends Application {
      * Called when a button (1-9) is clicked
      */
     private void hnadleB00Click(){
-        connectToGameServer();
-        if (cscGS != null) {
-            setUpGameScene(primaryStage);
-            //playerData.printPlayerData();
-            //cscSS.sendPlayerData(playerData);
+        if (cscSS != null) {
+            playerData.printPlayerData();
+            cscSS.sendPlayerData(playerData);
         }
 
     }
@@ -548,8 +554,9 @@ public class Player2ST extends Application {
         public CscToGameServer() {
             System.out.println("Client side connection");
             try {
-                gameSocket = new Socket("localhost", 30001);
-                chatSocket = new Socket("localhost", 30002);
+                System.out.println("try:?");
+                gameSocket = new Socket(gameServerIP, 30001);
+                chatSocket = new Socket(gameServerIP, 30002);
                 gameIn = new DataInputStream(gameSocket.getInputStream());
 
                 gameOutObj = new ObjectOutputStream(gameSocket.getOutputStream());
@@ -558,18 +565,13 @@ public class Player2ST extends Application {
                 chatOutObj = new ObjectOutputStream(chatSocket.getOutputStream());
                 chatInObj = new ObjectInputStream(chatSocket.getInputStream());
 
+                System.out.println("istening?");
                 playerID = gameIn.readInt();
                 System.out.println("Player ID: " + playerID);
 
                 gameMode = gameIn.readUTF();
                 System.out.println("gameMode: " + gameMode);
 
-                if (Objects.equals(gameMode, "tictactoe")){
-
-
-                } else if (Objects.equals(gameMode, "connect4")) {
-
-                }
 
                 startChatListener();
 
@@ -669,7 +671,7 @@ public class Player2ST extends Application {
         public CscToSearchServer() {
             System.out.println("Client side connection -- SearchServer");
             try {
-                this.socket = new Socket("44.222.177.63", 30000);
+                this.socket = new Socket("3.209.12.70", 30000);
 
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
@@ -706,13 +708,14 @@ public class Player2ST extends Application {
                     gameServerIP = dataIn.readUTF();
                     System.out.println("Received GameServer IP Address: " + gameServerIP);
                     if(!Objects.equals(gameServerIP, "na")) {
-                        closeConnection();
+                        closeConnectionSearchS();
                         connectToGameServer();
 
                         // Chatgtp said u can so primary stage unless its with this
                         // Platform.runLater javaFX special thread
                         Platform.runLater(() -> {
                             if (primaryStage != null) {
+                                System.out.println("Primary stag?e");
                                 setUpGameScene(primaryStage);
                             }
                         });
@@ -727,10 +730,10 @@ public class Player2ST extends Application {
 
 
 
-        public void closeConnection() {
+        public void closeConnectionSearchS() {
             try {
                 socket.close();
-                System.out.println("Closing connection");
+                System.out.println("Closing connection SearchS");
             } catch (IOException e) {
                 System.out.println("IO exception in ClientSideConnection closeConnection");
             }

@@ -3,5 +3,5 @@ WORKDIR /app/src
 COPY ./src/ .
 EXPOSE 30001
 EXPOSE 30002
-RUN mkdir ../build && javac -d ../build PlayerData.java GameServer2ST.java PracticeObj.java
+RUN mkdir ../build && javac -d ../build PlayerData.java GameServer.java PracticeGameObj.java
 ENTRYPOINT ["java", "-cp", "../build", "GameServer"]

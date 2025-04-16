@@ -327,7 +327,7 @@ public class GameServer {
             gameMode = args[0];
         } else {
             System.out.println("No mode passed. Using default: tictactoe");
-            gameMode = "connect4";
+            return;
         }
 
         GameServer gs = new GameServer();
