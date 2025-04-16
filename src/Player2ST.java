@@ -242,34 +242,92 @@ public class Player2ST extends Application {
                 }
             }
         } else if (gameMode.equals("connect4")) {
-            practiceGameObj = new PracticeGameObj(false, new char[6][7],"test" );
+            practiceGameObj = new PracticeGameObj(false, new char[6][7], "connect4");
+
+            root.setPadding(new Insets(15));
+            root.setAlignment(Pos.CENTER);
+            gameButtons.clear();
+
+            message = new TextArea();
+            message.setWrapText(true);
+            message.setEditable(false);
+            message.setMaxHeight(50);
+            root.getChildren().add(message);
+
+            // === Top Row: Drop Buttons ===
+            HBox dropButtons = new HBox(10);
+            dropButtons.setAlignment(Pos.CENTER);
+
+            grid.setHgap(5);
+            grid.setVgap(5);
+            grid.setAlignment(Pos.CENTER);
+
             char[][] board = practiceGameObj.getBoard();
+
+            // 7 Drop Buttons
+            for (int col = 0; col < 7; col++) {
+                int finalCol = col;
+                Button drop = new Button("↓");
+                drop.setPrefSize(40, 40);
+                drop.setStyle("-fx-font-size: 16px;");
+                drop.setOnAction(e -> {
+                    if (!buttonsEnabled) return;
+
+                    int rowToDrop = findAvailableRow(board, finalCol);
+                    if (rowToDrop != -1) {
+                        char symbol = (playerID == 1) ? 'X' : 'O';
+                        board[rowToDrop][finalCol] = symbol;
+                        practiceGameObj.setInputString(rowToDrop + "," + finalCol);
+                    }
+                });
+                dropButtons.getChildren().add(drop);
+            }
+            root.getChildren().add(dropButtons);
+
+            // === Game Grid ===
             for (int row = 0; row < 6; row++) {
                 for (int col = 0; col < 7; col++) {
                     Button cell = new Button();
                     cell.setPrefSize(60, 60);
                     cell.setStyle("-fx-font-size: 20px;");
                     gameButtons.add(cell);
-
-                    int c = col;
-                    cell.setOnAction(e -> {
-                        if (!buttonsEnabled) return;
-
-                        int dropRow = findAvailableRow(board, c);
-                        if (dropRow != -1) {
-                            char symbol = (playerID == 1) ? 'X' : 'O';
-                            board[dropRow][c] = symbol;
-                            practiceGameObj.setInputString(dropRow + "," + c);
-                            cscGS.sendPracticeGameObj();
-                            buttonsEnabled = false;
-                            toggleButtons();
-                            new Thread(this::updateTurn).start();
-                        }
-                    });
-
                     grid.add(cell, col, row);
                 }
             }
+            root.getChildren().add(grid);
+
+            // === Chat Section (shared across game modes) ===
+            Label chatLabel = new Label("Chat with opponent:");
+            chatArea = new TextArea();
+            chatArea.setEditable(false);
+            chatArea.setWrapText(true);
+            chatArea.setPrefHeight(150);
+
+            TextField chatInput = new TextField();
+            chatInput.setPromptText("Type your message...");
+            chatInput.setPrefWidth(300);
+
+            sendchat = new Button("Send");
+            sendchat.setOnAction(e -> {
+                String msg = chatInput.getText().trim();
+                if (!msg.isEmpty()) {
+                    String formatted = "player" + playerID + ": " + msg + "\n";
+                    chatArea.appendText(formatted);
+                    chatInput.clear();
+                    if (cscGS != null) {
+                        cscGS.sendChat(msg);
+                    }
+                }
+            });
+
+            HBox chatInputBox = new HBox(10, chatInput, sendchat);
+            chatInputBox.setAlignment(Pos.CENTER);
+            chatInputBox.setPadding(new Insets(10));
+            root.getChildren().addAll(chatLabel, chatArea, chatInputBox);
+
+            Scene scene = new Scene(root, 500, 600);
+            primaryStage.setScene(scene);
+            primaryStage.show();
         }
 
         root.getChildren().add(grid);
