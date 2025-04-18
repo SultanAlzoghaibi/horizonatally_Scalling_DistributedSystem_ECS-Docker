@@ -112,7 +112,10 @@ public class Player2ST extends Application {
         startCheckers = new Button("Start Checkers");
         startTictactoe = new Button("Start Tictactoe");
         startConnect4 = new Button("Start Connect4");
-
+        startChess.setStyle("-fx-font-size: 18px; -fx-padding: 10px 20px;");
+        startCheckers.setStyle("-fx-font-size: 18px; -fx-padding: 10px 20px;");
+        startTictactoe.setStyle("-fx-font-size: 18px; -fx-padding: 10px 20px;");
+        startConnect4.setStyle("-fx-font-size: 18px; -fx-padding: 10px 20px;");
        /* startb00 = new Button("Start b00");
 
         startb00.setOnAction(e -> {
@@ -671,7 +674,7 @@ public class Player2ST extends Application {
         public CscToSearchServer() {
             System.out.println("Client side connection -- SearchServer");
             try {
-                this.socket = new Socket("54.86.250.96", 30000);
+                this.socket = new Socket("54.234.2.166", 30000);
                 dataIn = new DataInputStream(socket.getInputStream());
                 dataOut = new DataOutputStream(socket.getOutputStream());
 

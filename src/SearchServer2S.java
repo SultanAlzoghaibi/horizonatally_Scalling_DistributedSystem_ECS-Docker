@@ -39,6 +39,7 @@ public class SearchServer2S {
     private int turnsMade;
     private int maxTurns;
     private ArrayList<SscPlayerData> sscPlayerDataArrayList = new ArrayList<>();
+    Map<String, String> ipToTaskArn = new HashMap<>();
 
     private char[][] server2dChar;
     private ArrayList<PlayerData> playerDataArrayList = new ArrayList<>();
@@ -54,6 +55,7 @@ public class SearchServer2S {
         System.out.println("--search server--");
         numPlayers = 0;
         portNumIncrement = 0;
+
 
 
         gameServerIpQueues.put("chess", new LinkedList<>()); // Queues will be used
@@ -74,6 +76,24 @@ public class SearchServer2S {
                 gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
             }
         }
+        // Every N minutes, clean up idle warm pool
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.scheduleAtFixedRate(() -> {
+            for (String gameMode : gameServerIpQueues.keySet()) {
+                Queue<String> pool = gameServerIpQueues.get(gameMode);
+                System.out.println(gameMode + ": being chekced for too big warmpool! ♨ ");
+               if(pool.size() == WARMPOOLINGSIZE + 2 ){
+                    while (pool.size() > WARMPOOLINGSIZE) {
+                        String unusedIp = pool.poll();
+                        if (unusedIp != null) {
+                            String taskARN = ipToTaskArn.get(unusedIp);
+                            terminateGameServerOnECS(taskARN); // Stop ECS task
+                            System.out.println("Terminated unused warm instance: " + unusedIp);
+                        }
+                    }
+               }
+            }
+        }, 1, 1, TimeUnit.MINUTES);
 
 
         try{
@@ -97,6 +117,22 @@ public class SearchServer2S {
         // End of chatGTP
     }
 
+    public void terminateGameServerOnECS(String taskArn) {
+        try (EcsClient ecsClient = EcsClient.create()) {
+            StopTaskRequest stopTaskRequest = StopTaskRequest.builder()
+                    .task(taskArn)
+                    .cluster("h-scalling") // Make sure this matches your actual cluster name
+                    .reason("Scaling down warm pool")
+                    .build();
+
+            StopTaskResponse response = ecsClient.stopTask(stopTaskRequest);
+            System.out.println("Successfully stopped task: " + taskArn);
+        } catch (Exception e) {
+            System.out.println("Failed to stop ECS task: " + taskArn);
+            e.printStackTrace();
+        }
+    }
+
     public String getPublicIpFromTaskArn(String taskArn) {
 
         EcsClient ecsClient = EcsClient.builder()
@@ -111,7 +147,7 @@ public class SearchServer2S {
 
         // Wait for ENI to be attached (max 60s)
         long startTime = System.nanoTime();
-        System.out.print("ENI API call time: ");
+        //System.out.print("ENI API call time: ");
         for (int i = 0; i < 600; i++) {
             try {
                 DescribeTasksRequest describeRequest = DescribeTasksRequest.builder()
@@ -134,9 +170,9 @@ public class SearchServer2S {
                     if (eniId != null) {
                         long endTime = System.nanoTime();
                         double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
-                        System.out.printf("%.2f", durationSeconds);
-                        System.out.println();
-                        System.out.println("🔍 ENI ID found: " + eniId);
+                        //System.out.printf("%.2f", durationSeconds);
+                        //System.out.println();
+                        //System.out.println("🔍 ENI ID found: " + eniId);
                         break;
                     }
                 }
@@ -156,7 +192,7 @@ public class SearchServer2S {
         }
 
         // ✅ Now wait for public IP to be available on that ENI (max 30s)
-        System.out.print("⌛ Waiting for public IP: ");
+        //System.out.print("⌛ Waiting for public IP: ");
         startTime = System.nanoTime();
 
         for (int i = 0; i < 300; i++) {
@@ -172,10 +208,12 @@ public class SearchServer2S {
                     String publicIp = assoc.publicIp();
                     long endTime = System.nanoTime();
                     double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
-                    System.out.printf("%.2f", durationSeconds);
-                    System.out.println();
+                   // System.out.printf("%.2f", durationSeconds);
+                    //System.out.println();
 
-                    System.out.println("🌐 Public IP found: " + publicIp);
+                    //System.out.println("🌐 Public IP found: " + publicIp);
+                    ipToTaskArn.put(publicIp, taskArn);
+
                     return publicIp;
                 } else {
 
@@ -248,9 +286,9 @@ public class SearchServer2S {
 
             long endTime = System.nanoTime();
             double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
-            System.out.print("launchGameServerOnECS Time: ");
-            System.out.printf("%.2f", durationSeconds);
-            System.out.println();
+            //System.out.print("launchGameServerOnECS Time: ");
+            //System.out.printf("%.2f", durationSeconds);
+            //System.out.println();
 
             return getPublicIpFromTaskArn(taskArn); // now handles ENI wait/retry internally
 
@@ -320,28 +358,6 @@ public class SearchServer2S {
     }
 
 
-    public void startMatchMakingThreads(){
-        scheduler.scheduleAtFixedRate(() -> {
-            System.out.println("Tick - -------------------");
-            synchronized (gameQueues) {
-
-                for (String gameModes : gameQueues.keySet()) {
-                    Thread t = new Thread(() -> {
-                        try {
-                            System.out.println(gameModes + ": sscPlayerDataArrayList.size() = " + gameQueues.get(gameModes).size());
-                            Thread.sleep(10);
-                            ArrayList<SscPlayerData> sscPDArraylist = gameQueues.get(gameModes);
-                            //gameModeMatchMakingToElo(sscPDArraylist); // Remmeber Arraylist are MUTABLE in java
-                            //matchMakingToElo();
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    });
-                    t.start();
-                }
-            }
-            }, 0, 5, TimeUnit.SECONDS);
-        };
 
 
     public class ServerSideConnection implements Runnable{
@@ -385,7 +401,10 @@ public class SearchServer2S {
                             System.out.print("Before gameQueues:");
                             printGameQueues();
                             String gameMode = tempsscPlayerData.playerData.getGameModeInterested();
-                            gameQueues.get(gameMode).add(tempsscPlayerData);
+
+                            synchronized (gameQueues.get(gameMode)) {
+                                gameQueues.get(gameMode).add(tempsscPlayerData);
+                            }
 
                             System.out.print("After GameQueues: ");
                             printGameQueues();
@@ -412,45 +431,53 @@ public class SearchServer2S {
             }
         }
 
-        public void gameModeMatchMakingToElo(String gameMode){
-            ArrayList<SscPlayerData> sscPDArraylist = gameQueues.get(gameMode);
+        public void gameModeMatchMakingToElo(String gameMode) {
+            synchronized (gameQueues.get(gameMode)) {
+                ArrayList<SscPlayerData> sscPDArraylist = gameQueues.get(gameMode);
 
-            if(sscPDArraylist.size() >= 2){
-                System.out.println("sscPlayerDataArrayList >= 2");
-                SscPlayerData player1 = sscPDArraylist.removeFirst();
-                SscPlayerData player2 = sscPDArraylist.removeFirst();
+                if (sscPDArraylist.size() >= 2) {
+                    System.out.println("sscPlayerDataArrayList >= 2");
+                    SscPlayerData player1 = sscPDArraylist.removeFirst();
+                    SscPlayerData player2 = sscPDArraylist.removeFirst();
 
 
-                System.out.println("IP ADRESS");
-                long startTime = System.nanoTime();
-                // for deguggin later
-                String ipAddress = gameServerIpQueues.get(gameMode).poll();
-                System.out.println("gamode : " + gameMode + " has a queue size or" + gameServerIpQueues.get(gameMode).size());
-                Thread t = new Thread(() -> {
-                    System.out.println("thread of adding to queue");
-                    gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
-                }); t.start();
+                    System.out.println("IP ADRESS");
+                    long startTime = System.nanoTime();
+                    // for deguggin later
+                    String ipAddress = gameServerIpQueues.get(gameMode).poll();
+                    System.out.println("gamode : " + gameMode + " has a queue size or" + gameServerIpQueues.get(gameMode).size());
 
-                //String ipAddress = launchGameServerOnECS(gameMode);
+                    Thread t = new Thread(() -> {
+                        System.out.println("thread of adding to queue");
+                        if (gameServerIpQueues.get(gameMode).isEmpty()) {
+                            gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
+                            gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
+                        }
+                        gameServerIpQueues.get(gameMode).add(launchGameServerOnECS(gameMode));
+                    });
+                    t.start();
 
-                long endTime = System.nanoTime();
-                double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
-                System.out.printf("⏱️ Time to get public IP: %.2f seconds: ", durationSeconds);
-                System.out.println();
-                System.out.println("🌐 Public IP of GameServer: " + ipAddress);
+                    //String ipAddress = launchGameServerOnECS(gameMode);
 
-                try {
-                    Thread.sleep(300);
-                } catch (InterruptedException e) {
-                    throw new RuntimeException(e);
+                    long endTime = System.nanoTime();
+                    double durationSeconds = (endTime - startTime) / 1_000_000_000.0;
+                    //System.out.printf("⏱️ TOTAL Time to get public IP: %.2f seconds: ", durationSeconds);
+                    // System.out.println();
+                    //System.out.println("🌐TOTAL Public IP of GameServer: " + ipAddress);
+
+                    try {
+                        Thread.sleep(300);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    player1.getSsc().sendIPAddress(ipAddress);
+                    player2.getSsc().sendIPAddress(ipAddress);
+                    System.out.println("sent them ip: " + ipAddress);
+                    //System.exit(0);
                 }
 
-                player1.getSsc().sendIPAddress(ipAddress);
-                player2.getSsc().sendIPAddress(ipAddress);
-                System.out.println("sent them ip: " + ipAddress);
-                //System.exit(0);
             }
-
         }
         // i ASK CHATGTP a bit here, AS im not familar with the aws and
         // AWS SDK Java API docs i svery big and tentious when I tried.
