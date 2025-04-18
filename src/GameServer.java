@@ -133,9 +133,7 @@ public class GameServer {
                 dataOut.writeUTF(gameMode);
                 dataOut.flush();
 
-                new Thread(() -> {
-                    handleChatThread();
-                }).start();
+                new Thread(this::handleChatThread).start();
 
                 while (true) {
                     if (playerID == 1) {
@@ -202,7 +200,6 @@ public class GameServer {
                     chatLogs.put(this.playerID, msg);  // Store censored message in chat logs
                     System.out.println("PUT Chat Player #" + this.playerID + ": " + msg);
 
-                    // Send the censored message to the other player
                     if (this.playerID == 1 && player2Ssc != null) {
                         player2Ssc.sendChatMessage(msg);
                     } else if (this.playerID == 2 && player1Ssc != null) {
@@ -317,8 +314,6 @@ public class GameServer {
                 System.out.println("Error closing server sockets: " + e.getMessage());
             }
         }
-
-
 
 
     public static void main(String[] args) {

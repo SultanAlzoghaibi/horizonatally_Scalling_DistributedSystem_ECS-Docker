@@ -16,7 +16,7 @@ public class PlayerData implements Serializable{
         this.playerElos.put("Chess", 20);
         this.playerElos.put("Checker", 20);
         this.playerElos.put("Connect4", 20);
-        this.playerElos.put("TicTacToe", 20);
+        this.playerElos.put("archievedwork.TicTacToe", 20);
 
         this.gameModeInterested = gameModeInterested;
     }
@@ -53,7 +53,7 @@ public class PlayerData implements Serializable{
         System.out.print(", ChessELO: " + playerElos.get("Chess"));
         System.out.print(", checkerElo: " + playerElos.get("Checker"));
         System.out.print(", connect4Elo: " + playerElos.get("Connect4"));
-        System.out.print(", tictactoeElo: " + playerElos.get("TicTacToe"));
+        System.out.print(", tictactoeElo: " + playerElos.get("archievedwork.TicTacToe"));
         System.out.println(", gameModeInterested: " + gameModeInterested + "]");
     }
 }

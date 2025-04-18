@@ -30,20 +30,14 @@ public class Player2ST extends Application {
     private Button startTictactoe;
     private Button startConnect4;
 
-    private Button b01, b02, b03, b04, b05, b06, b07, b08, b09;
 
     private CscToSearchServer cscSS;
     private CscToGameServer cscGS;
     private int playerID;
     private int otherPlayerID;
-    private int[] values;
-    private char[][] server2dChar;
-    private int maxTurns;
     private int turnsMade;
 
     private boolean buttonsEnabled;
-    private boolean gameIsActive;
-    private int gameServerPort;
     private String gameServerIP;
     private Stage primaryStage;
     private String gameMode;
@@ -88,7 +82,6 @@ public class Player2ST extends Application {
 
         // Initialize arrays and variables
         turnsMade = 0;
-        gameIsActive = false;
         buttonsEnabled = false;
         gameMode = "na";
         gameServerIP = "na";
@@ -175,7 +168,6 @@ public class Player2ST extends Application {
     }
 
     private void setUpLoadingScreen(Stage primaryStage) {
-        gameIsActive = true;
         primaryStage.setTitle("MATCHMAKING LOADING...");
         // Main layout
         VBox root = new VBox(15);
@@ -401,24 +393,6 @@ public class Player2ST extends Application {
         return -1; // No available row in this column
     }
 
-    /**
-     * Sets the onAction for each of the 9 game buttons.
-     */
-    private void setUpGameButtons() {
-        b01.setOnAction(e -> handleButtonClick("1"));
-        b02.setOnAction(e -> handleButtonClick("2"));
-        b03.setOnAction(e -> handleButtonClick("3"));
-        b04.setOnAction(e -> handleButtonClick("4"));
-        b05.setOnAction(e -> handleButtonClick("5"));
-        b06.setOnAction(e -> handleButtonClick("6"));
-        b07.setOnAction(e -> handleButtonClick("7"));
-        b08.setOnAction(e -> handleButtonClick("8"));
-        b09.setOnAction(e -> handleButtonClick("9"));
-    }
-
-    /**
-     * Called when a button (1-9) is clicked
-     */
     private void hnadleB00Click(){
         if (cscSS != null) {
             playerData.printPlayerData();
@@ -441,9 +415,9 @@ public class Player2ST extends Application {
         if (cscGS != null) {
             cscGS.sendPracticeGameObj();
         }
-
+        practiceGameObj.setWin(false);
         // If P2 hits max turns, check winner
-        if (playerID == 2 && turnsMade == maxTurns) {
+        if (playerID == 2 && practiceGameObj.isWin()) {
             //checkWinner();
         } else {
             // Otherwise wait for the opponent

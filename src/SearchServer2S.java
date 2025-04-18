@@ -36,15 +36,8 @@ public class SearchServer2S {
     private ServerSideConnection player1;
     // these a the server side equilivant to the package drop off points
     private ServerSideConnection player2;
-    private int turnsMade;
-    private int maxTurns;
-    private ArrayList<SscPlayerData> sscPlayerDataArrayList = new ArrayList<>();
     Map<String, String> ipToTaskArn = new HashMap<>();
-
-    private char[][] server2dChar;
-    private ArrayList<PlayerData> playerDataArrayList = new ArrayList<>();
     private PlayerData tempPlayerData;
-    private int portNumIncrement;
     private HashMap<String, ArrayList<SscPlayerData>> gameQueues = new HashMap<>();
     private HashMap<String, Queue<String>> gameServerIpQueues = new HashMap<>();
 
@@ -54,8 +47,6 @@ public class SearchServer2S {
     public SearchServer2S() {
         System.out.println("--search server--");
         numPlayers = 0;
-        portNumIncrement = 0;
-
 
 
         gameServerIpQueues.put("chess", new LinkedList<>()); // Queues will be used
@@ -117,7 +108,7 @@ public class SearchServer2S {
         // End of chatGTP
     }
 
-    public void terminateGameServerOnECS(String taskArn) {
+    public void terminateGameServerOnECS(String taskArn) { // aske gtp fro this method as not familer with amzon sdk
         try (EcsClient ecsClient = EcsClient.create()) {
             StopTaskRequest stopTaskRequest = StopTaskRequest.builder()
                     .task(taskArn)

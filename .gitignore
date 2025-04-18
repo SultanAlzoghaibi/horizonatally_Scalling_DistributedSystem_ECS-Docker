@@ -10,6 +10,9 @@ out/
 /*.iws
 
 libsArchieved
+clear-console.sh
+clear-console.sh.save
+
 
 sultan1_accessKeys.csv
 *.env
